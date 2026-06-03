@@ -1,6 +1,6 @@
 {
   "id": "com.togrill",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "compatibility": ">=6.0.0",
   "sdk": 3,
   "platforms": ["local"],

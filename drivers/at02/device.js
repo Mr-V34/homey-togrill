@@ -113,32 +113,42 @@ class ToGrillDevice extends Homey.Device {
   }
 
   async _subscribe() {
-    // Discover ALL services so we can log exactly what the device exposes.
-    // Some Homey BLE versions also require discoverServices() before getService().
     const services = await this._peripheral.discoverServices();
-    this.log(`Services on device: [${services.map(s => s.uuid).join(', ')}]`);
+    this.log(`Services: [${services.map(s => s.uuid).join(', ')}]`);
 
     const service = services.find(s => _uuidMatch(s.uuid, protocol.SERVICE_UUID));
-    if (!service) {
-      throw new Error(
-        `Service ${protocol.SERVICE_UUID} not found. ` +
-        `Device has: [${services.map(s => s.uuid).join(', ')}]`
-      );
-    }
+    if (!service) throw new Error(`Service not found. Has: [${services.map(s => s.uuid).join(', ')}]`);
 
     const chars = await service.discoverCharacteristics();
-    this.log(`Characteristics: [${chars.map(c => c.uuid).join(', ')}]`);
+    this.log(`Chars: [${chars.map(c => `${c.uuid}[${JSON.stringify(c.properties)}]`).join(', ')}]`);
 
     const notifyChar = chars.find(c => _uuidMatch(c.uuid, protocol.NOTIFY_UUID));
-    if (!notifyChar) {
-      throw new Error(
-        `Notify char ${protocol.NOTIFY_UUID} not found. ` +
-        `Chars: [${chars.map(c => c.uuid).join(', ')}]`
-      );
+    if (!notifyChar) throw new Error(`Notify char not found. Has: [${chars.map(c => c.uuid).join(', ')}]`);
+
+    this.log(`Notify char — id:${notifyChar.id} uuid:${notifyChar.uuid}`);
+
+    // Manually write 0x0100 to CCCD (descriptor 0x2902) to enable GATT notifications.
+    // Homey's subscribeToNotifications may not do this automatically on all firmware versions.
+    try {
+      const descs = await notifyChar.discoverDescriptors();
+      this.log(`Descriptors: [${descs.map(d => d.uuid).join(', ')}]`);
+      const cccd  = descs.find(d => _uuidMatch(d.uuid, '2902'));
+      if (cccd) {
+        await cccd.write(Buffer.from([0x01, 0x00]));
+        this.log('CCCD written: notifications enabled');
+      } else {
+        this.log('CCCD descriptor not found — skipping manual enable');
+      }
+    } catch (descErr) {
+      this.log(`Descriptor step failed (${descErr.message}) — continuing`);
     }
 
     this._notifyChar = notifyChar;
-    await this._notifyChar.subscribeToNotifications(data => this._onNotify(data));
+    await this._notifyChar.subscribeToNotifications(data => {
+      this.log(`RAW notify: ${Buffer.isBuffer(data) ? data.toString('hex') : JSON.stringify(data)}`);
+      this._onNotify(data);
+    });
+    this.log('subscribeToNotifications() resolved — waiting for device data');
   }
 
   _startWatchdog() {
