@@ -1,0 +1,20 @@
+[
+  {
+    "id": "ble_uuid",
+    "type": "label",
+    "label": { "en": "BLE Peripheral UUID", "sv": "BLE-periferi-UUID" },
+    "value": "Unknown"
+  },
+  {
+    "id": "firmware_version",
+    "type": "label",
+    "label": { "en": "Firmware Version", "sv": "Firmware-version" },
+    "value": "Unknown"
+  },
+  {
+    "id": "probe_count",
+    "type": "label",
+    "label": { "en": "Detected Probe Count", "sv": "Antal detekterade sonder" },
+    "value": "Unknown"
+  }
+]
