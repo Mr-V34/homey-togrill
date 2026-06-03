@@ -113,10 +113,31 @@ class ToGrillDevice extends Homey.Device {
   }
 
   async _subscribe() {
-    const service = await this._peripheral.getService(protocol.SERVICE_UUID);
-    const chars   = await service.discoverCharacteristics([protocol.NOTIFY_UUID]);
-    if (!chars.length) throw new Error('Notify characteristic not found');
-    this._notifyChar = chars[0];
+    // Discover ALL services so we can log exactly what the device exposes.
+    // Some Homey BLE versions also require discoverServices() before getService().
+    const services = await this._peripheral.discoverServices();
+    this.log(`Services on device: [${services.map(s => s.uuid).join(', ')}]`);
+
+    const service = services.find(s => _uuidMatch(s.uuid, protocol.SERVICE_UUID));
+    if (!service) {
+      throw new Error(
+        `Service ${protocol.SERVICE_UUID} not found. ` +
+        `Device has: [${services.map(s => s.uuid).join(', ')}]`
+      );
+    }
+
+    const chars = await service.discoverCharacteristics();
+    this.log(`Characteristics: [${chars.map(c => c.uuid).join(', ')}]`);
+
+    const notifyChar = chars.find(c => _uuidMatch(c.uuid, protocol.NOTIFY_UUID));
+    if (!notifyChar) {
+      throw new Error(
+        `Notify char ${protocol.NOTIFY_UUID} not found. ` +
+        `Chars: [${chars.map(c => c.uuid).join(', ')}]`
+      );
+    }
+
+    this._notifyChar = notifyChar;
     await this._notifyChar.subscribeToNotifications(data => this._onNotify(data));
   }
 
@@ -279,6 +300,15 @@ class ToGrillDevice extends Homey.Device {
   async setTimer(probeIdx, seconds)    { return this._setTimer(probeIdx, seconds); }
   async setRange(probeIdx, minC, maxC) { return this._write(protocol.encodeRange(probeIdx, minC, maxC)); }
 
+}
+
+// Normalise a UUID to bare lowercase hex for comparison.
+// Handles both full 128-bit ('0000cee0-0000-1000-8000-00805f9b34fb')
+// and short 16-bit ('cee0') forms that Homey may use.
+function _uuidMatch(a, b) {
+  const norm = u => u.toLowerCase().replace(/-/g, '')
+    .replace(/^0000([0-9a-f]{4})00001000800000805f9b34fb$/, '$1');
+  return norm(a) === norm(b);
 }
 
 module.exports = ToGrillDevice;
