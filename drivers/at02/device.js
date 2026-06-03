@@ -20,7 +20,8 @@ class ToGrillDevice extends Homey.Device {
     this._notifyChar      = null;
     this._reconnectTimer  = null;
     this._deviceStatus    = null;
-    this._disconnectedSet = new Set();  // tracks which probe indices are currently disconnected
+    this._disconnectedSet = new Set();
+    this._connectErr      = null;  // tracks which probe indices are currently disconnected
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
@@ -63,25 +64,50 @@ class ToGrillDevice extends Homey.Device {
 
   async _connect() {
     const uuid = this.getStoreValue('peripheralUuid');
-    if (!uuid) { this.error('No peripheralUuid in store — cannot connect'); return; }
+    if (!uuid) {
+      this._connectErr = 'No BLE UUID stored — delete and re-pair the device';
+      this.error(this._connectErr);
+      return;
+    }
 
     try {
       this.log(`Connecting to ${uuid}…`);
-      const ad         = await this.homey.ble.find(uuid, 10000);
+
+      // find() returns a cached advertisement or runs a short scan.
+      // If it throws, fall back to a full discover() scan so we get fresh results.
+      let ad;
+      try {
+        ad = await this.homey.ble.find(uuid);
+      } catch (findErr) {
+        this.log(`find() failed (${findErr.message}) — running discover() as fallback`);
+        const all = await this.homey.ble.discover([], 10000);
+        this.log(`discover() found ${all.length} device(s): ${all.map(a => `${a.localName || '?'}(${a.uuid})`).join(', ')}`);
+        ad = all.find(a => a.uuid === uuid);
+        if (!ad) {
+          throw new Error(`Device ${uuid} not visible. Found: [${all.map(a => a.localName || a.uuid).join(', ') || 'nothing'}]`);
+        }
+      }
+
       this._peripheral = await ad.connect();
 
       this._peripheral.once('disconnect', () => {
-        this.log('BLE disconnected');
+        this.log('BLE disconnected — scheduling immediate reconnect');
         this._peripheral = null;
         this._notifyChar = null;
-        this.setUnavailable('Disconnected from device').catch(this.error);
+        // Reconnect after 2 s to give the device time to re-advertise.
+        // The watchdog also covers persistent failures.
+        this.homey.setTimeout(() => {
+          if (!this._peripheral) this._connect().catch(e => this.error(`Reconnect failed: ${e.message}`));
+        }, 2000);
       });
 
       await this._subscribe();
+      this._connectErr = null;
       await this.setAvailable();
-      this.log('Connected and subscribed to notifications');
+      this.log('Connected and subscribed');
     } catch (err) {
       this.error(`Connect failed: ${err.message}`);
+      this._connectErr = err.message;
       this._peripheral = null;
     }
   }
@@ -220,10 +246,12 @@ class ToGrillDevice extends Homey.Device {
 
   async _write(buf) {
     if (!this._peripheral) {
-      this.log('Write requested while disconnected — reconnecting…');
+      this.log('Write: not connected — reconnecting…');
       await this._connect();
     }
-    if (!this._peripheral) throw new Error('Device not connected');
+    if (!this._peripheral) {
+      throw new Error(this._connectErr || 'Device not connected');
+    }
     this.log(`→ ${buf.toString('hex')}`);
     await this._peripheral.write(protocol.SERVICE_UUID, protocol.WRITE_UUID, buf);
   }
