@@ -4,6 +4,7 @@ const Homey    = require('homey');
 const protocol = require('../../lib/togrill-protocol');
 
 const RECONNECT_MS   = 10_000;
+const POLL_MS        = 10_000;   // fallback read-poll interval
 const BATTERY_WARN   = 20;
 const AMBIENT_CRIT   = 280;
 const DEFAULT_MIN_C  = 20;
@@ -19,6 +20,7 @@ class ToGrillDevice extends Homey.Device {
     this._peripheral      = null;
     this._notifyChar      = null;
     this._reconnectTimer  = null;
+    this._pollTimer       = null;
     this._deviceStatus    = null;
     this._disconnectedSet = new Set();
     this._connectErr      = null;
@@ -48,6 +50,7 @@ class ToGrillDevice extends Homey.Device {
 
   async onDeleted() {
     this._stopWatchdog();
+    this._stopPoll();
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
       this._peripheral = null;
@@ -56,6 +59,7 @@ class ToGrillDevice extends Homey.Device {
 
   async onUninit() {
     this._stopWatchdog();
+    this._stopPoll();
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
       this._peripheral = null;
@@ -148,6 +152,22 @@ class ToGrillDevice extends Homey.Device {
     this._notifyChar = notifyChar;
     await this._notifyChar.subscribeToNotifications(data => this._onRaw(data));
     this.log('subscribeToNotifications() resolved — waiting for device data');
+
+    // Immediately try a GATT READ on both characteristics to see if the device
+    // returns current state on demand (some devices require a read to kick off streaming).
+    for (const charUuid of [protocol.NOTIFY_UUID, protocol.WRITE_UUID]) {
+      try {
+        const d = await this._peripheral.read(protocol.SERVICE_UUID, charUuid);
+        this.log(`READ ${charUuid.slice(-8)}: ${d.toString('hex')}`);
+        if (d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) this._onRaw(d);
+      } catch (e) {
+        this.log(`READ ${charUuid.slice(-8)}: ${e.message}`);
+      }
+    }
+
+    // Start periodic poll — if the device doesn't push data autonomously,
+    // READ every 10 s as a fallback to keep capabilities up to date.
+    this._startPoll();
   }
 
   _startWatchdog() {
@@ -164,6 +184,29 @@ class ToGrillDevice extends Homey.Device {
     if (this._reconnectTimer) {
       this.homey.clearInterval(this._reconnectTimer);
       this._reconnectTimer = null;
+    }
+  }
+
+  _startPoll() {
+    this._stopPoll();
+    this._pollTimer = this.homey.setInterval(async () => {
+      if (!this._peripheral) return;
+      try {
+        const d = await this._peripheral.read(protocol.SERVICE_UUID, protocol.NOTIFY_UUID);
+        if (d && d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) {
+          this.log(`POLL: ${d.toString('hex')}`);
+          this._onRaw(d);
+        }
+      } catch (e) {
+        this.log(`POLL read failed: ${e.message}`);
+      }
+    }, POLL_MS);
+  }
+
+  _stopPoll() {
+    if (this._pollTimer) {
+      this.homey.clearInterval(this._pollTimer);
+      this._pollTimer = null;
     }
   }
 
