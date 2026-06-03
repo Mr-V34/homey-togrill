@@ -1,4 +1,8 @@
 {
+  "1.0.3": {
+    "en": "Diagnose BLE service discovery: log all services and characteristics the device exposes, with UUID normalisation to handle short vs full UUID format differences.",
+    "sv": "Diagnostisera BLE-tjänstupptäckt: logga alla tjänster och egenskaper enheten exponerar, med UUID-normalisering."
+  },
   "1.0.2": {
     "en": "Improved BLE reconnection: immediate retry on disconnect, discover() fallback, and better error messages when connection fails.",
     "sv": "Förbättrad BLE-återanslutning: omedelbart nytt försök vid frånkoppling, discover()-fallback och bättre felmeddelanden."
