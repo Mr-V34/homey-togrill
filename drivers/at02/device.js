@@ -126,47 +126,55 @@ class ToGrillDevice extends Homey.Device {
     if (!service) throw new Error(`Service not found. Has: [${services.map(s => s.uuid).join(', ')}]`);
 
     const chars = await service.discoverCharacteristics();
-    this.log(`Chars: [${chars.map(c => `${c.uuid}[${JSON.stringify(c.properties)}]`).join(', ')}]`);
+    this.log(`Chars: [${chars.map(c => c.uuid).join(', ')}]`);
 
     const notifyChar = chars.find(c => _uuidMatch(c.uuid, protocol.NOTIFY_UUID));
     if (!notifyChar) throw new Error(`Notify char not found. Has: [${chars.map(c => c.uuid).join(', ')}]`);
 
-    this.log(`Notify char — id:${notifyChar.id} uuid:${notifyChar.uuid}`);
-
-    // Manually write 0x0100 to CCCD (descriptor 0x2902) to enable GATT notifications.
-    // Homey's subscribeToNotifications may not do this automatically on all firmware versions.
+    // Read CCCD before subscribe to see its current state
     try {
       const descs = await notifyChar.discoverDescriptors();
       this.log(`Descriptors: [${descs.map(d => d.uuid).join(', ')}]`);
-      const cccd  = descs.find(d => _uuidMatch(d.uuid, '2902'));
+      const cccd = descs.find(d => _uuidMatch(d.uuid, '2902'));
       if (cccd) {
-        await cccd.write(Buffer.from([0x01, 0x00]));
-        this.log('CCCD written: notifications enabled');
-      } else {
-        this.log('CCCD descriptor not found — skipping manual enable');
+        try {
+          const before = await cccd.read();
+          this.log(`CCCD before subscribe: 0x${before.toString('hex')} (0100=notify, 0200=indicate, 0000=off)`);
+        } catch (e) {
+          this.log(`CCCD read: ${e.message}`);
+        }
       }
-    } catch (descErr) {
-      this.log(`Descriptor step failed (${descErr.message}) — continuing`);
+    } catch (e) {
+      this.log(`Descriptor step: ${e.message}`);
     }
 
     this._notifyChar = notifyChar;
     await this._notifyChar.subscribeToNotifications(data => this._onRaw(data));
-    this.log('subscribeToNotifications() resolved — waiting for device data');
+    this.log('subscribeToNotifications() resolved');
 
-    // Immediately try a GATT READ on both characteristics to see if the device
-    // returns current state on demand (some devices require a read to kick off streaming).
-    for (const charUuid of [protocol.NOTIFY_UUID, protocol.WRITE_UUID]) {
-      try {
-        const d = await this._peripheral.read(protocol.SERVICE_UUID, charUuid);
-        this.log(`READ ${charUuid.slice(-8)}: ${d.toString('hex')}`);
-        if (d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) this._onRaw(d);
-      } catch (e) {
-        this.log(`READ ${charUuid.slice(-8)}: ${e.message}`);
+    // Read CCCD after subscribe — tells us what subscribeToNotifications actually set
+    try {
+      const descs = await notifyChar.discoverDescriptors();
+      const cccd  = descs.find(d => _uuidMatch(d.uuid, '2902'));
+      if (cccd) {
+        try {
+          const after = await cccd.read();
+          this.log(`CCCD after subscribe:  0x${after.toString('hex')} (0100=notify, 0200=indicate)`);
+        } catch (e) {
+          this.log(`CCCD read after: ${e.message}`);
+        }
       }
+    } catch (e) {}
+
+    // Use notifyChar.read() directly (avoids peripheral.read UUID format bug)
+    try {
+      const d = await notifyChar.read();
+      this.log(`notifyChar.read(): ${d.toString('hex')}`);
+      if (d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) this._onRaw(d);
+    } catch (e) {
+      this.log(`notifyChar.read(): ${e.message}`);
     }
 
-    // Start periodic poll — if the device doesn't push data autonomously,
-    // READ every 10 s as a fallback to keep capabilities up to date.
     this._startPoll();
   }
 
@@ -190,15 +198,15 @@ class ToGrillDevice extends Homey.Device {
   _startPoll() {
     this._stopPoll();
     this._pollTimer = this.homey.setInterval(async () => {
-      if (!this._peripheral) return;
+      if (!this._peripheral || !this._notifyChar) return;
       try {
-        const d = await this._peripheral.read(protocol.SERVICE_UUID, protocol.NOTIFY_UUID);
+        const d = await this._notifyChar.read();
         if (d && d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) {
           this.log(`POLL: ${d.toString('hex')}`);
           this._onRaw(d);
         }
       } catch (e) {
-        this.log(`POLL read failed: ${e.message}`);
+        this.log(`POLL: ${e.message}`);
       }
     }, POLL_MS);
   }
