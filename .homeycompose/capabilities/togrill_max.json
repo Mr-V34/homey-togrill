@@ -1,0 +1,13 @@
+{
+  "type": "number",
+  "title": { "en": "Max Temperature", "sv": "Maxtemperatur" },
+  "desc": { "en": "Upper alarm threshold for this probe", "sv": "Övre larmgräns för denna sond" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "slider",
+  "min": 0,
+  "max": 300,
+  "step": 1,
+  "units": "°C",
+  "insights": false
+}

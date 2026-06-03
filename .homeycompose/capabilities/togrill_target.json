@@ -1,0 +1,13 @@
+{
+  "type": "number",
+  "title": { "en": "Target Temperature", "sv": "Måltemperatur" },
+  "desc": { "en": "Target temperature for this probe", "sv": "Måltemperatur för denna sond" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "slider",
+  "min": 0,
+  "max": 300,
+  "step": 1,
+  "units": "°C",
+  "insights": false
+}

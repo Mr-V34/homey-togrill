@@ -1,0 +1,13 @@
+{
+  "type": "number",
+  "title": { "en": "Min Temperature", "sv": "Mintemperatur" },
+  "desc": { "en": "Lower alarm threshold for this probe", "sv": "Nedre larmgräns för denna sond" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "slider",
+  "min": 0,
+  "max": 300,
+  "step": 1,
+  "units": "°C",
+  "insights": false
+}

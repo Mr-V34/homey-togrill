@@ -1,0 +1,50 @@
+{
+  "name": { "en": "ToGrill AT-02", "sv": "ToGrill AT-02" },
+  "class": "sensor",
+  "capabilities": [
+    "measure_temperature.probe1",
+    "measure_temperature.probe2",
+    "measure_temperature.probe3",
+    "measure_temperature.probe4",
+    "measure_temperature.ambient",
+    "measure_battery",
+    "alarm_generic.probe1",
+    "alarm_generic.probe2",
+    "alarm_generic.ambient_high",
+    "alarm_generic.probe_disconnected",
+    "togrill_target.probe1",
+    "togrill_target.probe2",
+    "togrill_timer.probe1",
+    "togrill_min.probe1",
+    "togrill_max.probe1"
+  ],
+  "capabilitiesOptions": {
+    "measure_temperature.probe1":        { "title": { "en": "Probe 1",          "sv": "Sond 1" } },
+    "measure_temperature.probe2":        { "title": { "en": "Probe 2",          "sv": "Sond 2" } },
+    "measure_temperature.probe3":        { "title": { "en": "Probe 3",          "sv": "Sond 3" } },
+    "measure_temperature.probe4":        { "title": { "en": "Probe 4",          "sv": "Sond 4" } },
+    "measure_temperature.ambient":       { "title": { "en": "Grill Temp",       "sv": "Grilltemperatur" } },
+    "alarm_generic.probe1":              { "title": { "en": "Probe 1 Alarm",    "sv": "Sond 1-larm" } },
+    "alarm_generic.probe2":              { "title": { "en": "Probe 2 Alarm",    "sv": "Sond 2-larm" } },
+    "alarm_generic.ambient_high":        { "title": { "en": "High Grill Temp",  "sv": "Hög grilltemperatur" } },
+    "alarm_generic.probe_disconnected":  { "title": { "en": "Probe Disconnected", "sv": "Sond urkopplad" } },
+    "togrill_target.probe1": { "title": { "en": "Target – Probe 1", "sv": "Mål – Sond 1" } },
+    "togrill_target.probe2": { "title": { "en": "Target – Probe 2", "sv": "Mål – Sond 2" } },
+    "togrill_timer.probe1":  { "title": { "en": "Timer – Probe 1",  "sv": "Timer – Sond 1" } },
+    "togrill_min.probe1":    { "title": { "en": "Min – Probe 1",    "sv": "Min – Sond 1" } },
+    "togrill_max.probe1":    { "title": { "en": "Max – Probe 1",    "sv": "Max – Sond 1" } }
+  },
+  "images": {
+    "small":  "/drivers/at02/assets/images/small.png",
+    "large":  "/drivers/at02/assets/images/large.png",
+    "xlarge": "/drivers/at02/assets/images/xlarge.png"
+  },
+  "energy": {
+    "batteries": ["AAA", "AAA"]
+  },
+  "connectivity": ["ble"],
+  "platforms": ["local"],
+  "pair": [
+    { "id": "list_devices" }
+  ]
+}

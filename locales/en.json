@@ -1,0 +1,18 @@
+{
+  "pair": {
+    "list_devices": {
+      "title":      "Select your ToGrill",
+      "loading":    "Scanning for ToGrill devices…",
+      "no_devices": "No ToGrill found. Make sure the thermometer is powered on and in range."
+    }
+  },
+  "settings": {
+    "ble_uuid":         "BLE Peripheral UUID",
+    "firmware_version": "Firmware Version",
+    "probe_count":      "Detected Probe Count"
+  },
+  "errors": {
+    "not_connected": "Device not connected",
+    "connect_failed": "Failed to connect to ToGrill"
+  }
+}

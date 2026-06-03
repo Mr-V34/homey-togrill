@@ -1,0 +1,720 @@
+{
+  "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
+  "id": "com.togrill",
+  "version": "1.0.0",
+  "compatibility": ">=6.0.0",
+  "sdk": 3,
+  "platforms": [
+    "local"
+  ],
+  "name": {
+    "en": "ToGrill BBQ Thermometer",
+    "sv": "ToGrill BBQ-termometer"
+  },
+  "description": {
+    "en": "Control your ToGrill AT-02 BBQ thermometer directly from Homey via Bluetooth.",
+    "sv": "Styr din ToGrill AT-02 BBQ-termometer direkt från Homey via Bluetooth."
+  },
+  "tags": {
+    "en": [
+      "togrill",
+      "bbq",
+      "thermometer",
+      "bluetooth",
+      "grill",
+      "probe"
+    ],
+    "sv": [
+      "togrill",
+      "bbq",
+      "termometer",
+      "bluetooth",
+      "grill",
+      "sond"
+    ]
+  },
+  "category": [
+    "tools"
+  ],
+  "brandColor": "#E05000",
+  "permissions": [
+    "homey:wireless:ble"
+  ],
+  "author": {
+    "name": "Mr-V34",
+    "email": "info@v34.com"
+  },
+  "bugs": {
+    "url": "https://github.com/Mr-V34/homey-togrill/issues"
+  },
+  "source": "https://github.com/Mr-V34/homey-togrill",
+  "images": {
+    "small": "/assets/images/small.png",
+    "large": "/assets/images/large.png",
+    "xlarge": "/assets/images/xlarge.png"
+  },
+  "flow": {
+    "triggers": [
+      {
+        "id": "probe_reached_target",
+        "title": {
+          "en": "Probe reached target temperature",
+          "sv": "Sond nådde måltemperatur"
+        },
+        "hint": {
+          "en": "Fires when a probe reaches its set target temperature.",
+          "sv": "Utlöses när en sond når sin inställda måltemperatur."
+        },
+        "tokens": [
+          {
+            "name": "probe",
+            "type": "number",
+            "title": {
+              "en": "Probe number",
+              "sv": "Sondnummer"
+            },
+            "example": 1
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          }
+        ]
+      },
+      {
+        "id": "probe_disconnected",
+        "title": {
+          "en": "Probe disconnected",
+          "sv": "Sond urkopplad"
+        },
+        "hint": {
+          "en": "Fires when a probe is unplugged from the device.",
+          "sv": "Utlöses när en sond kopplas ur."
+        },
+        "tokens": [
+          {
+            "name": "probe",
+            "type": "number",
+            "title": {
+              "en": "Probe number",
+              "sv": "Sondnummer"
+            },
+            "example": 1
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          }
+        ]
+      },
+      {
+        "id": "ambient_critical",
+        "title": {
+          "en": "Grill temperature critical",
+          "sv": "Grilltemperatur kritisk"
+        },
+        "hint": {
+          "en": "Fires when the grill temperature exceeds 280 °C.",
+          "sv": "Utlöses när grilltemperaturen överstiger 280 °C."
+        },
+        "tokens": [
+          {
+            "name": "temperature",
+            "type": "number",
+            "title": {
+              "en": "Temperature (°C)",
+              "sv": "Temperatur (°C)"
+            },
+            "example": 285
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          }
+        ]
+      },
+      {
+        "id": "battery_low",
+        "title": {
+          "en": "Battery low",
+          "sv": "Batteri lågt"
+        },
+        "hint": {
+          "en": "Fires when the device battery drops below 20 %.",
+          "sv": "Utlöses när enhetens batteri sjunker under 20 %."
+        },
+        "tokens": [
+          {
+            "name": "battery_level",
+            "type": "number",
+            "title": {
+              "en": "Battery level (%)",
+              "sv": "Batterinivå (%)"
+            },
+            "example": 15
+          }
+        ],
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          }
+        ]
+      }
+    ],
+    "conditions": [
+      {
+        "id": "probe_temp_above",
+        "title": {
+          "en": "Probe temperature !{{is|is not}} above",
+          "sv": "Sondtemperatur !{{är|är inte}} över"
+        },
+        "titleFormatted": {
+          "en": "Probe [[probe]] temperature !{{is|is not}} above [[temperature]] °C",
+          "sv": "Sond [[probe]] temperatur !{{är|är inte}} över [[temperature]] °C"
+        },
+        "hint": {
+          "en": "True when the selected probe is hotter than the given value.",
+          "sv": "Sant när vald sond är varmare än angivet värde."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              },
+              {
+                "id": "3",
+                "label": {
+                  "en": "Probe 3",
+                  "sv": "Sond 3"
+                }
+              },
+              {
+                "id": "4",
+                "label": {
+                  "en": "Probe 4",
+                  "sv": "Sond 4"
+                }
+              },
+              {
+                "id": "ambient",
+                "label": {
+                  "en": "Grill (ambient)",
+                  "sv": "Grill (ambient)"
+                }
+              }
+            ]
+          },
+          {
+            "name": "temperature",
+            "type": "number",
+            "title": {
+              "en": "Temperature (°C)",
+              "sv": "Temperatur (°C)"
+            },
+            "min": 0,
+            "max": 300,
+            "step": 1
+          }
+        ]
+      }
+    ],
+    "actions": [
+      {
+        "id": "set_target_temperature",
+        "title": {
+          "en": "Set target temperature",
+          "sv": "Ange måltemperatur"
+        },
+        "titleFormatted": {
+          "en": "Set target temperature for probe [[probe]] to [[temperature]] °C",
+          "sv": "Ange måltemperatur för sond [[probe]] till [[temperature]] °C"
+        },
+        "hint": {
+          "en": "Alarm fires when the probe reaches this temperature.",
+          "sv": "Larm utlöses när sonden når denna temperatur."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              },
+              {
+                "id": "3",
+                "label": {
+                  "en": "Probe 3",
+                  "sv": "Sond 3"
+                }
+              },
+              {
+                "id": "4",
+                "label": {
+                  "en": "Probe 4",
+                  "sv": "Sond 4"
+                }
+              }
+            ]
+          },
+          {
+            "name": "temperature",
+            "type": "number",
+            "title": {
+              "en": "Temperature (°C)",
+              "sv": "Temperatur (°C)"
+            },
+            "min": 0,
+            "max": 300,
+            "step": 1
+          }
+        ]
+      },
+      {
+        "id": "set_probe_timer",
+        "title": {
+          "en": "Set probe timer",
+          "sv": "Ange sond-timer"
+        },
+        "titleFormatted": {
+          "en": "Set timer for probe [[probe]] to [[seconds]] seconds",
+          "sv": "Ange timer för sond [[probe]] till [[seconds]] sekunder"
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              },
+              {
+                "id": "3",
+                "label": {
+                  "en": "Probe 3",
+                  "sv": "Sond 3"
+                }
+              },
+              {
+                "id": "4",
+                "label": {
+                  "en": "Probe 4",
+                  "sv": "Sond 4"
+                }
+              }
+            ]
+          },
+          {
+            "name": "seconds",
+            "type": "number",
+            "title": {
+              "en": "Seconds",
+              "sv": "Sekunder"
+            },
+            "min": 0,
+            "max": 7200,
+            "step": 60
+          }
+        ]
+      },
+      {
+        "id": "set_probe_range",
+        "title": {
+          "en": "Set probe temperature range",
+          "sv": "Ange sondtemperaturintervall"
+        },
+        "titleFormatted": {
+          "en": "Set probe [[probe]] range to [[min_temp]]–[[max_temp]] °C",
+          "sv": "Ange sond [[probe]] intervall till [[min_temp]]–[[max_temp]] °C"
+        },
+        "hint": {
+          "en": "Alarm fires if temperature goes below min or above max.",
+          "sv": "Larm utlöses om temperaturen understiger min eller överstiger max."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              },
+              {
+                "id": "3",
+                "label": {
+                  "en": "Probe 3",
+                  "sv": "Sond 3"
+                }
+              },
+              {
+                "id": "4",
+                "label": {
+                  "en": "Probe 4",
+                  "sv": "Sond 4"
+                }
+              }
+            ]
+          },
+          {
+            "name": "min_temp",
+            "type": "number",
+            "title": {
+              "en": "Min temp (°C)",
+              "sv": "Min temp (°C)"
+            },
+            "min": 0,
+            "max": 300,
+            "step": 1
+          },
+          {
+            "name": "max_temp",
+            "type": "number",
+            "title": {
+              "en": "Max temp (°C)",
+              "sv": "Max temp (°C)"
+            },
+            "min": 0,
+            "max": 300,
+            "step": 1
+          }
+        ]
+      }
+    ]
+  },
+  "drivers": [
+    {
+      "name": {
+        "en": "ToGrill AT-02",
+        "sv": "ToGrill AT-02"
+      },
+      "class": "sensor",
+      "capabilities": [
+        "measure_temperature.probe1",
+        "measure_temperature.probe2",
+        "measure_temperature.probe3",
+        "measure_temperature.probe4",
+        "measure_temperature.ambient",
+        "measure_battery",
+        "alarm_generic.probe1",
+        "alarm_generic.probe2",
+        "alarm_generic.ambient_high",
+        "alarm_generic.probe_disconnected",
+        "togrill_target.probe1",
+        "togrill_target.probe2",
+        "togrill_timer.probe1",
+        "togrill_min.probe1",
+        "togrill_max.probe1"
+      ],
+      "capabilitiesOptions": {
+        "measure_temperature.probe1": {
+          "title": {
+            "en": "Probe 1",
+            "sv": "Sond 1"
+          }
+        },
+        "measure_temperature.probe2": {
+          "title": {
+            "en": "Probe 2",
+            "sv": "Sond 2"
+          }
+        },
+        "measure_temperature.probe3": {
+          "title": {
+            "en": "Probe 3",
+            "sv": "Sond 3"
+          }
+        },
+        "measure_temperature.probe4": {
+          "title": {
+            "en": "Probe 4",
+            "sv": "Sond 4"
+          }
+        },
+        "measure_temperature.ambient": {
+          "title": {
+            "en": "Grill Temp",
+            "sv": "Grilltemperatur"
+          }
+        },
+        "alarm_generic.probe1": {
+          "title": {
+            "en": "Probe 1 Alarm",
+            "sv": "Sond 1-larm"
+          }
+        },
+        "alarm_generic.probe2": {
+          "title": {
+            "en": "Probe 2 Alarm",
+            "sv": "Sond 2-larm"
+          }
+        },
+        "alarm_generic.ambient_high": {
+          "title": {
+            "en": "High Grill Temp",
+            "sv": "Hög grilltemperatur"
+          }
+        },
+        "alarm_generic.probe_disconnected": {
+          "title": {
+            "en": "Probe Disconnected",
+            "sv": "Sond urkopplad"
+          }
+        },
+        "togrill_target.probe1": {
+          "title": {
+            "en": "Target – Probe 1",
+            "sv": "Mål – Sond 1"
+          }
+        },
+        "togrill_target.probe2": {
+          "title": {
+            "en": "Target – Probe 2",
+            "sv": "Mål – Sond 2"
+          }
+        },
+        "togrill_timer.probe1": {
+          "title": {
+            "en": "Timer – Probe 1",
+            "sv": "Timer – Sond 1"
+          }
+        },
+        "togrill_min.probe1": {
+          "title": {
+            "en": "Min – Probe 1",
+            "sv": "Min – Sond 1"
+          }
+        },
+        "togrill_max.probe1": {
+          "title": {
+            "en": "Max – Probe 1",
+            "sv": "Max – Sond 1"
+          }
+        }
+      },
+      "images": {
+        "small": "/drivers/at02/assets/images/small.png",
+        "large": "/drivers/at02/assets/images/large.png",
+        "xlarge": "/drivers/at02/assets/images/xlarge.png"
+      },
+      "energy": {
+        "batteries": [
+          "AAA",
+          "AAA"
+        ]
+      },
+      "connectivity": [
+        "ble"
+      ],
+      "platforms": [
+        "local"
+      ],
+      "pair": [
+        {
+          "id": "list_devices"
+        }
+      ],
+      "id": "at02",
+      "settings": [
+        {
+          "id": "ble_uuid",
+          "type": "label",
+          "label": {
+            "en": "BLE Peripheral UUID",
+            "sv": "BLE-periferi-UUID"
+          },
+          "value": "Unknown"
+        },
+        {
+          "id": "firmware_version",
+          "type": "label",
+          "label": {
+            "en": "Firmware Version",
+            "sv": "Firmware-version"
+          },
+          "value": "Unknown"
+        },
+        {
+          "id": "probe_count",
+          "type": "label",
+          "label": {
+            "en": "Detected Probe Count",
+            "sv": "Antal detekterade sonder"
+          },
+          "value": "Unknown"
+        }
+      ]
+    }
+  ],
+  "capabilities": {
+    "togrill_max": {
+      "type": "number",
+      "title": {
+        "en": "Max Temperature",
+        "sv": "Maxtemperatur"
+      },
+      "desc": {
+        "en": "Upper alarm threshold for this probe",
+        "sv": "Övre larmgräns för denna sond"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "min": 0,
+      "max": 300,
+      "step": 1,
+      "units": "°C",
+      "insights": false
+    },
+    "togrill_min": {
+      "type": "number",
+      "title": {
+        "en": "Min Temperature",
+        "sv": "Mintemperatur"
+      },
+      "desc": {
+        "en": "Lower alarm threshold for this probe",
+        "sv": "Nedre larmgräns för denna sond"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "min": 0,
+      "max": 300,
+      "step": 1,
+      "units": "°C",
+      "insights": false
+    },
+    "togrill_target": {
+      "type": "number",
+      "title": {
+        "en": "Target Temperature",
+        "sv": "Måltemperatur"
+      },
+      "desc": {
+        "en": "Target temperature for this probe",
+        "sv": "Måltemperatur för denna sond"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "min": 0,
+      "max": 300,
+      "step": 1,
+      "units": "°C",
+      "insights": false
+    },
+    "togrill_timer": {
+      "type": "number",
+      "title": {
+        "en": "Probe Timer",
+        "sv": "Sond-timer"
+      },
+      "desc": {
+        "en": "Countdown timer for this probe (seconds)",
+        "sv": "Nedräkningstimer för denna sond (sekunder)"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "slider",
+      "min": 0,
+      "max": 7200,
+      "step": 60,
+      "units": "s",
+      "insights": false
+    }
+  }
+}

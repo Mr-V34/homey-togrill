@@ -1,0 +1,13 @@
+{
+  "type": "number",
+  "title": { "en": "Probe Timer", "sv": "Sond-timer" },
+  "desc": { "en": "Countdown timer for this probe (seconds)", "sv": "Nedräkningstimer för denna sond (sekunder)" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "slider",
+  "min": 0,
+  "max": 7200,
+  "step": 60,
+  "units": "s",
+  "insights": false
+}

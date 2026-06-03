@@ -1,0 +1,18 @@
+{
+  "pair": {
+    "list_devices": {
+      "title":      "Välj din ToGrill",
+      "loading":    "Söker efter ToGrill-enheter…",
+      "no_devices": "Ingen ToGrill hittades. Kontrollera att termometern är påslagen och inom räckhåll."
+    }
+  },
+  "settings": {
+    "ble_uuid":         "BLE-periferi-UUID",
+    "firmware_version": "Firmware-version",
+    "probe_count":      "Antal detekterade sonder"
+  },
+  "errors": {
+    "not_connected": "Enheten är inte ansluten",
+    "connect_failed": "Det gick inte att ansluta till ToGrill"
+  }
+}
