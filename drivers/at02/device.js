@@ -21,7 +21,9 @@ class ToGrillDevice extends Homey.Device {
     this._reconnectTimer  = null;
     this._deviceStatus    = null;
     this._disconnectedSet = new Set();
-    this._connectErr      = null;  // tracks which probe indices are currently disconnected
+    this._connectErr      = null;
+    this._lastRawHex      = null;
+    this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
@@ -144,10 +146,7 @@ class ToGrillDevice extends Homey.Device {
     }
 
     this._notifyChar = notifyChar;
-    await this._notifyChar.subscribeToNotifications(data => {
-      this.log(`RAW notify: ${Buffer.isBuffer(data) ? data.toString('hex') : JSON.stringify(data)}`);
-      this._onNotify(data);
-    });
+    await this._notifyChar.subscribeToNotifications(data => this._onRaw(data));
     this.log('subscribeToNotifications() resolved — waiting for device data');
   }
 
@@ -169,6 +168,18 @@ class ToGrillDevice extends Homey.Device {
   }
 
   // ── Notification dispatch ─────────────────────────────────────────────────
+
+  // The AT-02 repeats each packet several times in rapid succession.
+  // Deduplicate: same raw bytes within 500 ms = one logical event.
+  _onRaw(data) {
+    const hex = Buffer.isBuffer(data) ? data.toString('hex') : String(data);
+    const now  = Date.now();
+    if (hex === this._lastRawHex && now - this._lastRawTime < 500) return;
+    this._lastRawHex  = hex;
+    this._lastRawTime = now;
+    this.log(`RAW: ${hex}`);
+    this._onNotify(data);
+  }
 
   _onNotify(raw) {
     let packet;
@@ -255,6 +266,17 @@ class ToGrillDevice extends Homey.Device {
     const names = ['probe1', 'probe2', 'probe3', 'probe4'];
     const name  = names[p.probe] ?? `probe${p.probe + 1}`;
     switch (p.message) {
+      case 'probe_connected':
+        this._disconnectedSet.delete(p.probe);
+        if (this._disconnectedSet.size === 0) {
+          this.setCapabilityValue('alarm_generic.probe_disconnected', false).catch(this.error);
+        }
+        break;
+      case 'probe_disconnected':
+        this._disconnectedSet.add(p.probe);
+        this.setCapabilityValue('alarm_generic.probe_disconnected', true).catch(this.error);
+        this._trgDisconnected.trigger(this, { probe: p.probe + 1 }, {}).catch(this.error);
+        break;
       case 'above_max':
       case 'below_min':
         this.setCapabilityValue(`alarm_generic.${name}`, true).catch(this.error);
