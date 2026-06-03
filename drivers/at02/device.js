@@ -3,7 +3,7 @@
 const Homey    = require('homey');
 const protocol = require('../../lib/togrill-protocol');
 
-const RECONNECT_MS   = 30_000;
+const RECONNECT_MS   = 10_000;
 const BATTERY_WARN   = 20;
 const AMBIENT_CRIT   = 280;
 const DEFAULT_MIN_C  = 20;
@@ -219,6 +219,10 @@ class ToGrillDevice extends Homey.Device {
   // ── Write helpers ─────────────────────────────────────────────────────────
 
   async _write(buf) {
+    if (!this._peripheral) {
+      this.log('Write requested while disconnected — reconnecting…');
+      await this._connect();
+    }
     if (!this._peripheral) throw new Error('Device not connected');
     this.log(`→ ${buf.toString('hex')}`);
     await this._peripheral.write(protocol.SERVICE_UUID, protocol.WRITE_UUID, buf);
