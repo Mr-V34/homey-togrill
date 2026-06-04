@@ -9,6 +9,7 @@ const BATTERY_WARN   = 20;
 const AMBIENT_CRIT   = 280;
 const DEFAULT_MIN_C  = 20;
 const DEFAULT_MAX_C  = 100;
+const PROBE_DISCONNECT_RESET_MS = 5 * 60_000;  // auto-clear a stuck probe-disconnect alarm after 5 min
 
 class ToGrillDevice extends Homey.Device {
 
@@ -24,6 +25,7 @@ class ToGrillDevice extends Homey.Device {
     this._pollTimer       = null;
     this._deviceStatus    = null;
     this._disconnectedSet = new Set();
+    this._probeDisconnectTimer = null;
     this._connectErr      = null;
     this._lastRawHex      = null;
     this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
@@ -52,6 +54,7 @@ class ToGrillDevice extends Homey.Device {
   async onDeleted() {
     this._stopWatchdog();
     this._stopPoll();
+    if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
       this._peripheral = null;
@@ -61,6 +64,7 @@ class ToGrillDevice extends Homey.Device {
   async onUninit() {
     this._stopWatchdog();
     this._stopPoll();
+    if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
       this._peripheral = null;
@@ -258,6 +262,30 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
+  // ── Probe-disconnected alarm ──────────────────────────────────────────────
+
+  // Raise the dashboard alarm and arm a 5-minute auto-reset. The reset stops the
+  // alarm latching forever on an empty/unused probe slot; a genuinely new
+  // disconnect re-raises it (and re-arms the timer). Reconnection clears it
+  // immediately via _clearProbeDisconnected().
+  _raiseProbeDisconnected() {
+    this.setCapabilityValue('alarm_generic.probe_disconnected', true).catch(this.error);
+    if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
+    this._probeDisconnectTimer = this.homey.setTimeout(() => {
+      this._probeDisconnectTimer = null;
+      this.log('Probe-disconnect alarm auto-reset after 5 min');
+      this.setCapabilityValue('alarm_generic.probe_disconnected', false).catch(this.error);
+    }, PROBE_DISCONNECT_RESET_MS);
+  }
+
+  _clearProbeDisconnected() {
+    if (this._probeDisconnectTimer) {
+      this.homey.clearTimeout(this._probeDisconnectTimer);
+      this._probeDisconnectTimer = null;
+    }
+    this.setCapabilityValue('alarm_generic.probe_disconnected', false).catch(this.error);
+  }
+
   // ── Packet handlers ───────────────────────────────────────────────────────
 
   _onStatus(p) {
@@ -290,13 +318,13 @@ class ToGrillDevice extends Homey.Device {
         if (this._disconnectedSet.has(i)) {
           this._disconnectedSet.delete(i);
           if (this._disconnectedSet.size === 0) {
-            this.setCapabilityValue('alarm_generic.probe_disconnected', false).catch(this.error);
+            this._clearProbeDisconnected();
           }
         }
       } else {
         if (!this._disconnectedSet.has(i)) {
           this._disconnectedSet.add(i);
-          this.setCapabilityValue('alarm_generic.probe_disconnected', true).catch(this.error);
+          this._raiseProbeDisconnected();
           this._trgDisconnected
             .trigger(this, { probe: i + 1 }, {})
             .catch(this.error);
@@ -326,20 +354,18 @@ class ToGrillDevice extends Homey.Device {
   _onProbeEvent(p) {
     const names = ['probe1', 'probe2', 'probe3', 'probe4'];
     const name  = names[p.probe] ?? `probe${p.probe + 1}`;
+    // Note: the protocol has no "probe connected" event — reconnection is
+    // detected when a probe channel reports a real temperature again
+    // (see _onTemperatures), which clears the alarm.
     switch (p.message) {
-      case 'probe_connected':
-        this._disconnectedSet.delete(p.probe);
-        if (this._disconnectedSet.size === 0) {
-          this.setCapabilityValue('alarm_generic.probe_disconnected', false).catch(this.error);
-        }
-        break;
       case 'probe_disconnected':
         this._disconnectedSet.add(p.probe);
-        this.setCapabilityValue('alarm_generic.probe_disconnected', true).catch(this.error);
+        this._raiseProbeDisconnected();
         this._trgDisconnected.trigger(this, { probe: p.probe + 1 }, {}).catch(this.error);
         break;
       case 'above_max':
       case 'below_min':
+      case 'probe_alarm':
         this.setCapabilityValue(`alarm_generic.${name}`, true).catch(this.error);
         break;
     }
