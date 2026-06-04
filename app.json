@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.togrill",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "compatibility": ">=6.0.0",
   "sdk": 3,
   "platforms": [
@@ -224,48 +224,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              },
-              {
-                "id": "3",
-                "label": {
-                  "en": "Probe 3",
-                  "sv": "Sond 3"
-                }
-              },
-              {
-                "id": "4",
-                "label": {
-                  "en": "Probe 4",
-                  "sv": "Sond 4"
-                }
-              },
-              {
-                "id": "ambient",
-                "label": {
-                  "en": "Grill (ambient)",
-                  "sv": "Grill (ambient)"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "temperature",
@@ -304,41 +267,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              },
-              {
-                "id": "3",
-                "label": {
-                  "en": "Probe 3",
-                  "sv": "Sond 3"
-                }
-              },
-              {
-                "id": "4",
-                "label": {
-                  "en": "Probe 4",
-                  "sv": "Sond 4"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "temperature",
@@ -371,41 +304,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              },
-              {
-                "id": "3",
-                "label": {
-                  "en": "Probe 3",
-                  "sv": "Sond 3"
-                }
-              },
-              {
-                "id": "4",
-                "label": {
-                  "en": "Probe 4",
-                  "sv": "Sond 4"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "seconds",
@@ -442,41 +345,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              },
-              {
-                "id": "3",
-                "label": {
-                  "en": "Probe 3",
-                  "sv": "Sond 3"
-                }
-              },
-              {
-                "id": "4",
-                "label": {
-                  "en": "Probe 4",
-                  "sv": "Sond 4"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "min_temp",
@@ -524,27 +397,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "grill_type",
@@ -692,27 +549,11 @@
           },
           {
             "name": "probe",
-            "type": "dropdown",
+            "type": "autocomplete",
             "title": {
               "en": "Probe",
               "sv": "Sond"
-            },
-            "values": [
-              {
-                "id": "1",
-                "label": {
-                  "en": "Probe 1",
-                  "sv": "Sond 1"
-                }
-              },
-              {
-                "id": "2",
-                "label": {
-                  "en": "Probe 2",
-                  "sv": "Sond 2"
-                }
-              }
-            ]
+            }
           },
           {
             "name": "taste",
@@ -784,22 +625,40 @@
         "measure_temperature.probe4",
         "measure_temperature.ambient",
         "measure_battery",
+        "togrill_rssi",
         "alarm_generic.probe1",
         "alarm_generic.probe2",
+        "alarm_generic.probe3",
+        "alarm_generic.probe4",
         "alarm_generic.ambient_high",
         "alarm_generic.ambient_low",
         "alarm_generic.probe_disconnected",
-        "togrill_min.ambient",
-        "togrill_max.ambient",
         "togrill_target.probe1",
         "togrill_target.probe2",
-        "togrill_timer.probe1",
+        "togrill_target.probe3",
+        "togrill_target.probe4",
         "togrill_min.probe1",
+        "togrill_min.probe2",
+        "togrill_min.probe3",
+        "togrill_min.probe4",
         "togrill_max.probe1",
+        "togrill_max.probe2",
+        "togrill_max.probe3",
+        "togrill_max.probe4",
+        "togrill_timer.probe1",
+        "togrill_timer.probe2",
+        "togrill_timer.probe3",
+        "togrill_timer.probe4",
         "togrill_grill_type.probe1",
         "togrill_grill_type.probe2",
+        "togrill_grill_type.probe3",
+        "togrill_grill_type.probe4",
         "togrill_taste.probe1",
-        "togrill_taste.probe2"
+        "togrill_taste.probe2",
+        "togrill_taste.probe3",
+        "togrill_taste.probe4",
+        "togrill_min.ambient",
+        "togrill_max.ambient"
       ],
       "capabilitiesOptions": {
         "measure_temperature.probe1": {
@@ -844,6 +703,18 @@
             "sv": "Sond 2-larm"
           }
         },
+        "alarm_generic.probe3": {
+          "title": {
+            "en": "Probe 3 Alarm",
+            "sv": "Sond 3-larm"
+          }
+        },
+        "alarm_generic.probe4": {
+          "title": {
+            "en": "Probe 4 Alarm",
+            "sv": "Sond 4-larm"
+          }
+        },
         "alarm_generic.ambient_high": {
           "title": {
             "en": "High Grill Temp",
@@ -862,18 +733,6 @@
             "sv": "Sond urkopplad"
           }
         },
-        "togrill_min.ambient": {
-          "title": {
-            "en": "Grill Min",
-            "sv": "Grill min"
-          }
-        },
-        "togrill_max.ambient": {
-          "title": {
-            "en": "Grill Max",
-            "sv": "Grill max"
-          }
-        },
         "togrill_target.probe1": {
           "title": {
             "en": "Target – Probe 1",
@@ -886,10 +745,16 @@
             "sv": "Mål – Sond 2"
           }
         },
-        "togrill_timer.probe1": {
+        "togrill_target.probe3": {
           "title": {
-            "en": "Timer – Probe 1",
-            "sv": "Timer – Sond 1"
+            "en": "Target – Probe 3",
+            "sv": "Mål – Sond 3"
+          }
+        },
+        "togrill_target.probe4": {
+          "title": {
+            "en": "Target – Probe 4",
+            "sv": "Mål – Sond 4"
           }
         },
         "togrill_min.probe1": {
@@ -898,10 +763,70 @@
             "sv": "Min – Sond 1"
           }
         },
+        "togrill_min.probe2": {
+          "title": {
+            "en": "Min – Probe 2",
+            "sv": "Min – Sond 2"
+          }
+        },
+        "togrill_min.probe3": {
+          "title": {
+            "en": "Min – Probe 3",
+            "sv": "Min – Sond 3"
+          }
+        },
+        "togrill_min.probe4": {
+          "title": {
+            "en": "Min – Probe 4",
+            "sv": "Min – Sond 4"
+          }
+        },
         "togrill_max.probe1": {
           "title": {
             "en": "Max – Probe 1",
             "sv": "Max – Sond 1"
+          }
+        },
+        "togrill_max.probe2": {
+          "title": {
+            "en": "Max – Probe 2",
+            "sv": "Max – Sond 2"
+          }
+        },
+        "togrill_max.probe3": {
+          "title": {
+            "en": "Max – Probe 3",
+            "sv": "Max – Sond 3"
+          }
+        },
+        "togrill_max.probe4": {
+          "title": {
+            "en": "Max – Probe 4",
+            "sv": "Max – Sond 4"
+          }
+        },
+        "togrill_timer.probe1": {
+          "title": {
+            "en": "Timer – Probe 1",
+            "sv": "Timer – Sond 1"
+          }
+        },
+        "togrill_timer.probe2": {
+          "title": {
+            "en": "Timer – Probe 2",
+            "sv": "Timer – Sond 2"
+          }
+        },
+        "togrill_timer.probe3": {
+          "title": {
+            "en": "Timer – Probe 3",
+            "sv": "Timer – Sond 3"
+          }
+        },
+        "togrill_timer.probe4": {
+          "title": {
+            "en": "Timer – Probe 4",
+            "sv": "Timer – Sond 4"
           }
         },
         "togrill_grill_type.probe1": {
@@ -916,6 +841,18 @@
             "sv": "Grilltyp – Sond 2"
           }
         },
+        "togrill_grill_type.probe3": {
+          "title": {
+            "en": "Grill Type – Probe 3",
+            "sv": "Grilltyp – Sond 3"
+          }
+        },
+        "togrill_grill_type.probe4": {
+          "title": {
+            "en": "Grill Type – Probe 4",
+            "sv": "Grilltyp – Sond 4"
+          }
+        },
         "togrill_taste.probe1": {
           "title": {
             "en": "Taste – Probe 1",
@@ -926,6 +863,30 @@
           "title": {
             "en": "Taste – Probe 2",
             "sv": "Stekgrad – Sond 2"
+          }
+        },
+        "togrill_taste.probe3": {
+          "title": {
+            "en": "Taste – Probe 3",
+            "sv": "Stekgrad – Sond 3"
+          }
+        },
+        "togrill_taste.probe4": {
+          "title": {
+            "en": "Taste – Probe 4",
+            "sv": "Stekgrad – Sond 4"
+          }
+        },
+        "togrill_min.ambient": {
+          "title": {
+            "en": "Grill Min",
+            "sv": "Grill min"
+          }
+        },
+        "togrill_max.ambient": {
+          "title": {
+            "en": "Grill Max",
+            "sv": "Grill max"
           }
         }
       },
@@ -1166,6 +1127,24 @@
       "step": 1,
       "units": "°C",
       "insights": false
+    },
+    "togrill_rssi": {
+      "type": "number",
+      "title": {
+        "en": "Signal Strength",
+        "sv": "Signalstyrka"
+      },
+      "desc": {
+        "en": "Bluetooth signal strength to the device (higher/closer to 0 is stronger)",
+        "sv": "Bluetooth-signalstyrka till enheten (närmare 0 är starkare)"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "units": "dBm",
+      "decimals": 0,
+      "insights": true,
+      "icon": "/assets/icon.svg"
     },
     "togrill_target": {
       "type": "number",

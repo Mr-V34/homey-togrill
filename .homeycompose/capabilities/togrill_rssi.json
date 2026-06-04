@@ -1,0 +1,12 @@
+{
+  "type": "number",
+  "title": { "en": "Signal Strength", "sv": "Signalstyrka" },
+  "desc": { "en": "Bluetooth signal strength to the device (higher/closer to 0 is stronger)", "sv": "Bluetooth-signalstyrka till enheten (närmare 0 är starkare)" },
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "units": "dBm",
+  "decimals": 0,
+  "insights": true,
+  "icon": "/assets/icon.svg"
+}

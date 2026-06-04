@@ -1,4 +1,8 @@
 {
+  "1.3.0": {
+    "en": "Full 4-probe support: every probe now has its own target, min/max, timer, grill type and taste. Added a Bluetooth signal-strength reading so you can tell if the device is too far away. Disconnected probes now clear their temperature, and Flow probe pickers only list probes that are actually connected.",
+    "sv": "Fullt stöd för 4 sonder: varje sond har nu egen mål, min/max, timer, grilltyp och stekgrad. Lade till Bluetooth-signalstyrka så du ser om enheten är för långt borta. Urkopplade sonder nollställer sin temperatur, och Flow-sondväljare visar bara sonder som faktiskt är anslutna."
+  },
   "1.2.0": {
     "en": "Monitor your grill (ambient) temperature range: set Grill Min and Grill Max on the device and get separate alarms — and Flow triggers — when the grill runs too low (fire dying) or too high. Ideal for long, low-and-slow BBQ sessions. Set a threshold to 0 to disable it.",
     "sv": "Övervaka grillens (omgivningens) temperaturintervall: ställ in Grill min och Grill max på enheten och få separata larm — och Flow-utlösare — när grillen blir för låg (elden dör) eller för hög. Perfekt för långa BBQ-pass. Sätt ett tröskelvärde till 0 för att stänga av det."

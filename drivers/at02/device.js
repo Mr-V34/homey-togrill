@@ -40,15 +40,16 @@ class ToGrillDevice extends Homey.Device {
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
 
-    this.registerCapabilityListener('togrill_target.probe1', v => this._setTarget(0, v));
-    this.registerCapabilityListener('togrill_target.probe2', v => this._setTarget(1, v));
-    this.registerCapabilityListener('togrill_timer.probe1',  v => this._setTimer(0, v));
-    this.registerCapabilityListener('togrill_min.probe1',    v => this._setMin(0, v));
-    this.registerCapabilityListener('togrill_max.probe1',    v => this._setMax(0, v));
-    this.registerCapabilityListener('togrill_grill_type.probe1', v => this._setGrillType(0, v));
-    this.registerCapabilityListener('togrill_grill_type.probe2', v => this._setGrillType(1, v));
-    this.registerCapabilityListener('togrill_taste.probe1',      v => this._setTaste(0, v));
-    this.registerCapabilityListener('togrill_taste.probe2',      v => this._setTaste(1, v));
+    // All four probes share the same control set (target/timer/min/max/grill/taste).
+    for (let i = 0; i < 4; i++) {
+      const n = i + 1;
+      this.registerCapabilityListener(`togrill_target.probe${n}`,     v => this._setTarget(i, v));
+      this.registerCapabilityListener(`togrill_timer.probe${n}`,      v => this._setTimer(i, v));
+      this.registerCapabilityListener(`togrill_min.probe${n}`,        v => this._setMin(i, v));
+      this.registerCapabilityListener(`togrill_max.probe${n}`,        v => this._setMax(i, v));
+      this.registerCapabilityListener(`togrill_grill_type.probe${n}`, v => this._setGrillType(i, v));
+      this.registerCapabilityListener(`togrill_taste.probe${n}`,      v => this._setTaste(i, v));
+    }
 
     // Grill (ambient) min/max are monitored app-side — they don't write to the
     // device (no protocol support). Re-evaluate the alarm shortly after a change
@@ -96,20 +97,27 @@ class ToGrillDevice extends Homey.Device {
 
   // Add new sub-capabilities (with their per-probe titles) to existing devices.
   async _ensureCapabilities() {
-    const NEW_CAPS = {
-      'togrill_grill_type.probe1': { en: 'Grill Type – Probe 1', sv: 'Grilltyp – Sond 1' },
-      'togrill_grill_type.probe2': { en: 'Grill Type – Probe 2', sv: 'Grilltyp – Sond 2' },
-      'togrill_taste.probe1':      { en: 'Taste – Probe 1',      sv: 'Stekgrad – Sond 1' },
-      'togrill_taste.probe2':      { en: 'Taste – Probe 2',      sv: 'Stekgrad – Sond 2' },
-      'togrill_min.ambient':       { en: 'Grill Min',            sv: 'Grill min' },
-      'togrill_max.ambient':       { en: 'Grill Max',            sv: 'Grill max' },
-      'alarm_generic.ambient_low': { en: 'Low Grill Temp',       sv: 'Låg grilltemperatur' },
-    };
-    for (const [cap, title] of Object.entries(NEW_CAPS)) {
+    const P = (en, sv) => ({ en, sv });
+    const need = {};
+    for (let n = 1; n <= 4; n++) {
+      need[`alarm_generic.probe${n}`]      = P(`Probe ${n} Alarm`,      `Sond ${n}-larm`);
+      need[`togrill_target.probe${n}`]     = P(`Target – Probe ${n}`,   `Mål – Sond ${n}`);
+      need[`togrill_min.probe${n}`]        = P(`Min – Probe ${n}`,      `Min – Sond ${n}`);
+      need[`togrill_max.probe${n}`]        = P(`Max – Probe ${n}`,      `Max – Sond ${n}`);
+      need[`togrill_timer.probe${n}`]      = P(`Timer – Probe ${n}`,    `Timer – Sond ${n}`);
+      need[`togrill_grill_type.probe${n}`] = P(`Grill Type – Probe ${n}`, `Grilltyp – Sond ${n}`);
+      need[`togrill_taste.probe${n}`]      = P(`Taste – Probe ${n}`,    `Stekgrad – Sond ${n}`);
+    }
+    need['togrill_min.ambient']       = P('Grill Min', 'Grill min');
+    need['togrill_max.ambient']       = P('Grill Max', 'Grill max');
+    need['alarm_generic.ambient_low'] = P('Low Grill Temp', 'Låg grilltemperatur');
+    need['togrill_rssi']              = null;  // capability defines its own title
+
+    for (const [cap, title] of Object.entries(need)) {
       if (!this.hasCapability(cap)) {
         try {
           await this.addCapability(cap);
-          await this.setCapabilityOptions(cap, { title });
+          if (title) await this.setCapabilityOptions(cap, { title });
           this.log(`Added capability ${cap}`);
         } catch (e) {
           this.error(`addCapability ${cap} failed: ${e.message}`);
@@ -147,6 +155,9 @@ class ToGrillDevice extends Homey.Device {
       }
 
       this._peripheral = await ad.connect();
+      if (typeof ad.rssi === 'number' && this.hasCapability('togrill_rssi')) {
+        this.setCapabilityValue('togrill_rssi', ad.rssi).catch(() => {});
+      }
 
       this._peripheral.once('disconnect', () => {
         this.log('BLE disconnected — scheduling immediate reconnect');
@@ -261,11 +272,26 @@ class ToGrillDevice extends Homey.Device {
         // probe count) less often — once per ~6 ticks (~1 min at 10s).
         await this._requestTemperatures();
         if (tick % 6 === 0) await this._requestStatus();
+        this._updateRssi();
         tick++;
       } catch (e) {
         this.log(`POLL request failed: ${e.message}`);
       }
     }, POLL_MS);
+  }
+
+  // Refresh the Bluetooth signal-strength reading (dBm; closer to 0 = stronger).
+  async _updateRssi() {
+    if (!this._peripheral) return;
+    try {
+      if (typeof this._peripheral.updateRssi === 'function') await this._peripheral.updateRssi();
+      const rssi = this._peripheral.rssi;
+      if (typeof rssi === 'number' && this.hasCapability('togrill_rssi')) {
+        this.setCapabilityValue('togrill_rssi', rssi).catch(this.error);
+      }
+    } catch (e) {
+      // updateRssi can fail transiently mid-connection; ignore and retry next poll.
+    }
   }
 
   _stopPoll() {
@@ -372,6 +398,8 @@ class ToGrillDevice extends Homey.Device {
       } else {
         if (!this._disconnectedSet.has(i)) {
           this._disconnectedSet.add(i);
+          // Clear the stale reading so the tile shows "--" for the unplugged probe.
+          this.setCapabilityValue(`measure_temperature.${name}`, null).catch(this.error);
           this._raiseProbeDisconnected();
           this._trgDisconnected
             .trigger(this, { probe: i + 1 }, {})
@@ -441,9 +469,9 @@ class ToGrillDevice extends Homey.Device {
     const names = ['probe1', 'probe2', 'probe3', 'probe4'];
     const name  = names[p.probe] ?? `probe${p.probe + 1}`;
 
-    // Reflect the device's current cooking preset for the probes we expose (1-2).
+    // Reflect the device's current cooking preset for the probes we expose (1-4).
     const n = p.probe + 1;
-    if (n === 1 || n === 2) {
+    if (n >= 1 && n <= 4) {
       if (this.hasCapability(`togrill_grill_type.probe${n}`)) {
         this.setCapabilityValue(`togrill_grill_type.probe${n}`, protocol.grillTypeId(p.grillType)).catch(this.error);
       }
@@ -531,6 +559,21 @@ class ToGrillDevice extends Homey.Device {
   async setTaste(probeIdx, tasteIdValue) {
     await this._setTaste(probeIdx, tasteIdValue);
     await this.setCapabilityValue(`togrill_taste.probe${probeIdx + 1}`, tasteIdValue).catch(this.error);
+  }
+
+  // Connected probes for Flow autocomplete — a probe counts as connected when it
+  // currently reports a temperature. Optionally include the grill (ambient) sensor.
+  getProbeChoices(includeAmbient = false) {
+    const out = [];
+    for (let i = 1; i <= 4; i++) {
+      const t = this.getCapabilityValue(`measure_temperature.probe${i}`);
+      if (t !== null && t !== undefined) out.push({ id: String(i), name: `Probe ${i}` });
+    }
+    if (includeAmbient) {
+      const a = this.getCapabilityValue('measure_temperature.ambient');
+      if (a !== null && a !== undefined) out.push({ id: 'ambient', name: 'Grill (ambient)' });
+    }
+    return out;
   }
 
   // Device-settings UI: write alarm interval (minutes) to the device when changed.
