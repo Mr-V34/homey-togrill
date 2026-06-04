@@ -6,7 +6,6 @@ const protocol = require('../../lib/togrill-protocol');
 const RECONNECT_MS   = 10_000;
 const POLL_MS        = 10_000;   // fallback read-poll interval
 const BATTERY_WARN   = 20;
-const AMBIENT_CRIT   = 280;
 const DEFAULT_MIN_C  = 20;
 const DEFAULT_MAX_C  = 100;
 const PROBE_DISCONNECT_RESET_MS = 5 * 60_000;  // auto-clear a stuck probe-disconnect alarm after 5 min
@@ -29,10 +28,12 @@ class ToGrillDevice extends Homey.Device {
     this._connectErr      = null;
     this._lastRawHex      = null;
     this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
+    this._lastAmbient     = null;  // last grill (ambient) temp, for threshold re-evaluation
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
     this._trgAmbientCrit   = this.homey.flow.getDeviceTriggerCard('ambient_critical');
+    this._trgGrillLow      = this.homey.flow.getDeviceTriggerCard('grill_temp_low');
     this._trgBatteryLow    = this.homey.flow.getDeviceTriggerCard('battery_low');
 
     // Migration: add capabilities introduced in updates to already-paired
@@ -48,6 +49,20 @@ class ToGrillDevice extends Homey.Device {
     this.registerCapabilityListener('togrill_grill_type.probe2', v => this._setGrillType(1, v));
     this.registerCapabilityListener('togrill_taste.probe1',      v => this._setTaste(0, v));
     this.registerCapabilityListener('togrill_taste.probe2',      v => this._setTaste(1, v));
+
+    // Grill (ambient) min/max are monitored app-side — they don't write to the
+    // device (no protocol support). Re-evaluate the alarm shortly after a change
+    // (next tick, so the new capability value is committed) for instant feedback.
+    const reEvalGrill = () => this.homey.setTimeout(() => {
+      if (this._lastAmbient != null) this._evaluateAmbientAlarms(this._lastAmbient);
+    }, 100);
+    this.registerCapabilityListener('togrill_min.ambient', async () => { reEvalGrill(); });
+    this.registerCapabilityListener('togrill_max.ambient', async () => { reEvalGrill(); });
+
+    // Initialise the grill thresholds to 0 (= disabled) when unset.
+    for (const cap of ['togrill_min.ambient', 'togrill_max.ambient']) {
+      if (this.getCapabilityValue(cap) == null) await this.setCapabilityValue(cap, 0).catch(() => {});
+    }
 
     this._startWatchdog();
     await this._connect();
@@ -86,6 +101,9 @@ class ToGrillDevice extends Homey.Device {
       'togrill_grill_type.probe2': { en: 'Grill Type – Probe 2', sv: 'Grilltyp – Sond 2' },
       'togrill_taste.probe1':      { en: 'Taste – Probe 1',      sv: 'Stekgrad – Sond 1' },
       'togrill_taste.probe2':      { en: 'Taste – Probe 2',      sv: 'Stekgrad – Sond 2' },
+      'togrill_min.ambient':       { en: 'Grill Min',            sv: 'Grill min' },
+      'togrill_max.ambient':       { en: 'Grill Max',            sv: 'Grill max' },
+      'alarm_generic.ambient_low': { en: 'Low Grill Temp',       sv: 'Låg grilltemperatur' },
     };
     for (const [cap, title] of Object.entries(NEW_CAPS)) {
       if (!this.hasCapability(cap)) {
@@ -370,14 +388,32 @@ class ToGrillDevice extends Homey.Device {
       const ambient = p.channels[p.channels.length - 1];
       if (ambient !== null) {
         this.setCapabilityValue('measure_temperature.ambient', ambient).catch(this.error);
-        const isCrit = ambient > AMBIENT_CRIT;
-        this.setCapabilityValue('alarm_generic.ambient_high', isCrit).catch(this.error);
-        if (isCrit) {
-          this._trgAmbientCrit
-            .trigger(this, { temperature: ambient }, {})
-            .catch(this.error);
-        }
+        this._evaluateAmbientAlarms(ambient);
       }
+    }
+  }
+
+  // Compare the grill (ambient) temperature against the user-set Grill Min/Max
+  // and drive the high/low alarms. A threshold of 0 means "disabled". Triggers
+  // fire only on the false→true edge so we don't spam Flows on every ~1 Hz update.
+  _evaluateAmbientAlarms(ambient) {
+    if (ambient === null || ambient === undefined) return;
+    this._lastAmbient = ambient;
+
+    const max = this.getCapabilityValue('togrill_max.ambient') ?? 0;
+    const high = max > 0 && ambient > max;
+    if (this.hasCapability('alarm_generic.ambient_high')) {
+      const prev = this.getCapabilityValue('alarm_generic.ambient_high');
+      this.setCapabilityValue('alarm_generic.ambient_high', high).catch(this.error);
+      if (high && !prev) this._trgAmbientCrit.trigger(this, { temperature: ambient }, {}).catch(this.error);
+    }
+
+    const min = this.getCapabilityValue('togrill_min.ambient') ?? 0;
+    const low = min > 0 && ambient < min;
+    if (this.hasCapability('alarm_generic.ambient_low')) {
+      const prev = this.getCapabilityValue('alarm_generic.ambient_low');
+      this.setCapabilityValue('alarm_generic.ambient_low', low).catch(this.error);
+      if (low && !prev) this._trgGrillLow.trigger(this, { temperature: ambient }, {}).catch(this.error);
     }
   }
 
