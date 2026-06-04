@@ -19,6 +19,7 @@ class ToGrillDevice extends Homey.Device {
 
     this._peripheral      = null;
     this._notifyChar      = null;
+    this._writeChar       = null;
     this._reconnectTimer  = null;
     this._pollTimer       = null;
     this._deviceStatus    = null;
@@ -100,6 +101,7 @@ class ToGrillDevice extends Homey.Device {
         this.log('BLE disconnected — scheduling immediate reconnect');
         this._peripheral = null;
         this._notifyChar = null;
+        this._writeChar  = null;
         // Reconnect after 2 s to give the device time to re-advertise.
         // The watchdog also covers persistent failures.
         this.homey.setTimeout(() => {
@@ -130,6 +132,13 @@ class ToGrillDevice extends Homey.Device {
 
     const notifyChar = chars.find(c => _uuidMatch(c.uuid, protocol.NOTIFY_UUID));
     if (!notifyChar) throw new Error(`Notify char not found. Has: [${chars.map(c => c.uuid).join(', ')}]`);
+
+    // Hold the write characteristic object directly. Calling peripheral.write()
+    // with a dashed UUID fails ("no service found") because the SDK stores UUIDs
+    // without dashes — using the char object sidesteps that lookup entirely.
+    const writeChar = chars.find(c => _uuidMatch(c.uuid, protocol.WRITE_UUID));
+    if (!writeChar) throw new Error(`Write char not found. Has: [${chars.map(c => c.uuid).join(', ')}]`);
+    this._writeChar = writeChar;
 
     // Read CCCD before subscribe to see its current state
     try {
@@ -166,14 +175,10 @@ class ToGrillDevice extends Homey.Device {
       }
     } catch (e) {}
 
-    // Use notifyChar.read() directly (avoids peripheral.read UUID format bug)
-    try {
-      const d = await notifyChar.read();
-      this.log(`notifyChar.read(): ${d.toString('hex')}`);
-      if (d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) this._onRaw(d);
-    } catch (e) {
-      this.log(`notifyChar.read(): ${e.message}`);
-    }
+    // The AT-02 does not stream A0/A1 on its own — it answers requests.
+    // Kick off one status + one temperature request now; replies arrive via _onRaw.
+    await this._requestStatus();
+    await this._requestTemperatures();
 
     this._startPoll();
   }
@@ -197,16 +202,17 @@ class ToGrillDevice extends Homey.Device {
 
   _startPoll() {
     this._stopPoll();
+    let tick = 0;
     this._pollTimer = this.homey.setInterval(async () => {
-      if (!this._peripheral || !this._notifyChar) return;
+      if (!this._peripheral || !this._writeChar) return;
       try {
-        const d = await this._notifyChar.read();
-        if (d && d.length >= 5 && d[0] === 0x55 && d[1] === 0xAA) {
-          this.log(`POLL: ${d.toString('hex')}`);
-          this._onRaw(d);
-        }
+        // Ask for fresh temperatures every tick; refresh status (battery,
+        // probe count) less often — once per ~6 ticks (~1 min at 10s).
+        await this._requestTemperatures();
+        if (tick % 6 === 0) await this._requestStatus();
+        tick++;
       } catch (e) {
-        this.log(`POLL: ${e.message}`);
+        this.log(`POLL request failed: ${e.message}`);
       }
     }, POLL_MS);
   }
@@ -246,6 +252,7 @@ class ToGrillDevice extends Homey.Device {
       case 'temperatures': return this._onTemperatures(packet);
       case 'probe_event':  return this._onProbeEvent(packet);
       case 'alarm_detail': return this._onAlarmDetail(packet);
+      case 'command_ack':  return this.log(`Command ack: 0x${(packet.command ?? 0).toString(16)}`);
       default:
         this.log(`Unknown packet: ${packet.type}`);
     }
@@ -297,9 +304,12 @@ class ToGrillDevice extends Homey.Device {
       }
     }
 
-    // Ambient channel
+    // Ambient channel. The AT-02 always reports it as the LAST channel of the
+    // A1 frame (confirmed on-device: heating the clip sensor moved channel 6 of
+    // 7, while probe channels stayed flat). The slots between the probes and the
+    // ambient are 0xFFFF filler, so index it from the end, not at `probeCount`.
     if (hasAmbient && p.channels.length > probeCount) {
-      const ambient = p.channels[probeCount];
+      const ambient = p.channels[p.channels.length - 1];
       if (ambient !== null) {
         this.setCapabilityValue('measure_temperature.ambient', ambient).catch(this.error);
         const isCrit = ambient > AMBIENT_CRIT;
@@ -349,15 +359,27 @@ class ToGrillDevice extends Homey.Device {
   // ── Write helpers ─────────────────────────────────────────────────────────
 
   async _write(buf) {
-    if (!this._peripheral) {
+    if (!this._peripheral || !this._writeChar) {
       this.log('Write: not connected — reconnecting…');
       await this._connect();
     }
-    if (!this._peripheral) {
+    if (!this._peripheral || !this._writeChar) {
       throw new Error(this._connectErr || 'Device not connected');
     }
     this.log(`→ ${buf.toString('hex')}`);
-    await this._peripheral.write(protocol.SERVICE_UUID, protocol.WRITE_UUID, buf);
+    // Write via the characteristic object, NOT peripheral.write(uuid, uuid, buf):
+    // the SDK can't resolve dashed UUIDs and throws "no service found".
+    await this._writeChar.write(buf);
+  }
+
+  // ── Data requests (request/response — device replies on the notify char) ──────
+
+  async _requestStatus() {
+    await this._write(protocol.encodeRequestStatus());
+  }
+
+  async _requestTemperatures() {
+    await this._write(protocol.encodeRequestTemperatures());
   }
 
   async _setTarget(probeIdx, tempC) {

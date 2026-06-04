@@ -1,4 +1,8 @@
 {
+  "1.0.9": {
+    "en": "Live temperature streaming now works reliably: the app requests data from the AT-02 and receives continuous probe and ambient readings. Fixed setting a probe's target temperature, corrected the ambient sensor reading, and improved connection stability.",
+    "sv": "Realtidstemperatur fungerar nu stabilt: appen begär data från AT-02 och tar emot kontinuerliga sond- och omgivningsvärden. Åtgärdade inställning av sondens måltemperatur, korrigerade omgivningssensorns avläsning och förbättrade anslutningsstabiliteten."
+  },
   "1.0.3": {
     "en": "Diagnose BLE service discovery: log all services and characteristics the device exposes, with UUID normalisation to handle short vs full UUID format differences.",
     "sv": "Diagnostisera BLE-tjänstupptäckt: logga alla tjänster och egenskaper enheten exponerar, med UUID-normalisering."
