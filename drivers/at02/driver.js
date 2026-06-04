@@ -26,6 +26,18 @@ class ToGrillDriver extends Homey.Driver {
         await device.setRange(Number(probe) - 1, min_temp, max_temp);
       });
 
+    this.homey.flow.getActionCard('set_grill_type')
+      .registerRunListener(async ({ device, probe, grill_type }) => {
+        this.log(`[flow] set_grill_type → ${device.getName()} probe=${probe} type=${grill_type}`);
+        await device.setGrillType(Number(probe) - 1, grill_type);
+      });
+
+    this.homey.flow.getActionCard('set_taste')
+      .registerRunListener(async ({ device, probe, taste }) => {
+        this.log(`[flow] set_taste → ${device.getName()} probe=${probe} taste=${taste}`);
+        await device.setTaste(Number(probe) - 1, taste);
+      });
+
     this.homey.flow.getConditionCard('probe_temp_above')
       .registerRunListener(async ({ device, probe, temperature }) => {
         const capId = probe === 'ambient'

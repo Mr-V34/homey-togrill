@@ -1,0 +1,17 @@
+{
+  "type": "enum",
+  "title": { "en": "Taste", "sv": "Stekgrad" },
+  "desc": { "en": "The doneness wanted when finished", "sv": "Önskad stekgrad när klar" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "picker",
+  "insights": false,
+  "values": [
+    { "id": "none",        "title": { "en": "None",        "sv": "Ingen" } },
+    { "id": "rare",        "title": { "en": "Rare",        "sv": "Blodig" } },
+    { "id": "medium_rare", "title": { "en": "Medium rare", "sv": "Halvblodig" } },
+    { "id": "medium",      "title": { "en": "Medium",      "sv": "Medium" } },
+    { "id": "medium_well", "title": { "en": "Medium well", "sv": "Halvgenomstekt" } },
+    { "id": "well_done",   "title": { "en": "Well done",   "sv": "Genomstekt" } }
+  ]
+}

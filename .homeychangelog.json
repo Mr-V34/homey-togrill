@@ -1,4 +1,8 @@
 {
+  "1.1.0": {
+    "en": "New cooking presets: set a Grill type (the meat) and Taste (doneness) per probe, just like the device's own menu — directly on the device or from Flows. Added an adjustable alarm interval. Matches the feature set of the Home Assistant ToGrill integration.",
+    "sv": "Nya tillagningsförinställningar: ange Grilltyp (köttet) och Stekgrad per sond, precis som enhetens egen meny — direkt på enheten eller via Flows. Lade till justerbart larmintervall. Matchar funktionerna i Home Assistants ToGrill-integration."
+  },
   "1.0.11": {
     "en": "The 'probe disconnected' alarm now resets automatically after 5 minutes instead of staying on, and probe events are decoded correctly so a real disconnection is reported accurately.",
     "sv": "Larmet 'sond urkopplad' återställs nu automatiskt efter 5 minuter i stället för att vara kvar, och sondhändelser avkodas korrekt så att en verklig urkoppling rapporteras rätt."

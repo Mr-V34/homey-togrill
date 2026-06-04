@@ -16,5 +16,15 @@
     "type": "label",
     "label": { "en": "Detected Probe Count", "sv": "Antal detekterade sonder" },
     "value": "Unknown"
+  },
+  {
+    "id": "alarm_interval",
+    "type": "number",
+    "label": { "en": "Alarm interval (minutes)", "sv": "Larmintervall (minuter)" },
+    "hint": { "en": "Minutes between repeated alarms on the device.", "sv": "Minuter mellan upprepade larm på enheten." },
+    "value": 5,
+    "min": 1,
+    "max": 60,
+    "step": 1
   }
 ]

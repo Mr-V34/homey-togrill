@@ -35,11 +35,19 @@ class ToGrillDevice extends Homey.Device {
     this._trgAmbientCrit   = this.homey.flow.getDeviceTriggerCard('ambient_critical');
     this._trgBatteryLow    = this.homey.flow.getDeviceTriggerCard('battery_low');
 
+    // Migration: add capabilities introduced in updates to already-paired
+    // devices (new caps only auto-apply to freshly-paired devices otherwise).
+    await this._ensureCapabilities();
+
     this.registerCapabilityListener('togrill_target.probe1', v => this._setTarget(0, v));
     this.registerCapabilityListener('togrill_target.probe2', v => this._setTarget(1, v));
     this.registerCapabilityListener('togrill_timer.probe1',  v => this._setTimer(0, v));
     this.registerCapabilityListener('togrill_min.probe1',    v => this._setMin(0, v));
     this.registerCapabilityListener('togrill_max.probe1',    v => this._setMax(0, v));
+    this.registerCapabilityListener('togrill_grill_type.probe1', v => this._setGrillType(0, v));
+    this.registerCapabilityListener('togrill_grill_type.probe2', v => this._setGrillType(1, v));
+    this.registerCapabilityListener('togrill_taste.probe1',      v => this._setTaste(0, v));
+    this.registerCapabilityListener('togrill_taste.probe2',      v => this._setTaste(1, v));
 
     this._startWatchdog();
     await this._connect();
@@ -68,6 +76,27 @@ class ToGrillDevice extends Homey.Device {
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
       this._peripheral = null;
+    }
+  }
+
+  // Add new sub-capabilities (with their per-probe titles) to existing devices.
+  async _ensureCapabilities() {
+    const NEW_CAPS = {
+      'togrill_grill_type.probe1': { en: 'Grill Type – Probe 1', sv: 'Grilltyp – Sond 1' },
+      'togrill_grill_type.probe2': { en: 'Grill Type – Probe 2', sv: 'Grilltyp – Sond 2' },
+      'togrill_taste.probe1':      { en: 'Taste – Probe 1',      sv: 'Stekgrad – Sond 1' },
+      'togrill_taste.probe2':      { en: 'Taste – Probe 2',      sv: 'Stekgrad – Sond 2' },
+    };
+    for (const [cap, title] of Object.entries(NEW_CAPS)) {
+      if (!this.hasCapability(cap)) {
+        try {
+          await this.addCapability(cap);
+          await this.setCapabilityOptions(cap, { title });
+          this.log(`Added capability ${cap}`);
+        } catch (e) {
+          this.error(`addCapability ${cap} failed: ${e.message}`);
+        }
+      }
     }
   }
 
@@ -294,6 +323,7 @@ class ToGrillDevice extends Homey.Device {
     this.setSettings({
       firmware_version: p.version,
       probe_count:      String(p.probeCount),
+      ...(p.alarmInterval != null ? { alarm_interval: p.alarmInterval } : {}),
     }).catch(() => {});
 
     if (p.battery < BATTERY_WARN) {
@@ -374,6 +404,18 @@ class ToGrillDevice extends Homey.Device {
   _onAlarmDetail(p) {
     const names = ['probe1', 'probe2', 'probe3', 'probe4'];
     const name  = names[p.probe] ?? `probe${p.probe + 1}`;
+
+    // Reflect the device's current cooking preset for the probes we expose (1-2).
+    const n = p.probe + 1;
+    if (n === 1 || n === 2) {
+      if (this.hasCapability(`togrill_grill_type.probe${n}`)) {
+        this.setCapabilityValue(`togrill_grill_type.probe${n}`, protocol.grillTypeId(p.grillType)).catch(this.error);
+      }
+      if (this.hasCapability(`togrill_taste.probe${n}`)) {
+        this.setCapabilityValue(`togrill_taste.probe${n}`, protocol.tasteId(p.taste)).catch(this.error);
+      }
+    }
+
     if (p.alarmType === 1) {
       this.setCapabilityValue(`alarm_generic.${name}`, true).catch(this.error);
       this._trgReachedTarget
@@ -426,10 +468,48 @@ class ToGrillDevice extends Homey.Device {
     await this._write(protocol.encodeRange(probeIdx, minC, maxC));
   }
 
+  // Grill type + taste share one A3/0x03 packet, so sending one must preserve the
+  // other probe-local value. Read the sibling capability and write both together.
+  async _setGrillType(probeIdx, grillId) {
+    const tId = this.getCapabilityValue(`togrill_taste.probe${probeIdx + 1}`) ?? 'none';
+    await this._write(protocol.encodeGrillTaste(
+      probeIdx, protocol.GRILL_TYPES[grillId] ?? 0, protocol.TASTES[tId] ?? 0));
+  }
+
+  async _setTaste(probeIdx, tasteIdValue) {
+    const gId = this.getCapabilityValue(`togrill_grill_type.probe${probeIdx + 1}`) ?? 'none';
+    await this._write(protocol.encodeGrillTaste(
+      probeIdx, protocol.GRILL_TYPES[gId] ?? 0, protocol.TASTES[tasteIdValue] ?? 0));
+  }
+
   // Public API for flow action cards in driver.js
   async setTarget(probeIdx, tempC)     { return this._setTarget(probeIdx, tempC); }
   async setTimer(probeIdx, seconds)    { return this._setTimer(probeIdx, seconds); }
   async setRange(probeIdx, minC, maxC) { return this._write(protocol.encodeRange(probeIdx, minC, maxC)); }
+
+  async setGrillType(probeIdx, grillId) {
+    await this._setGrillType(probeIdx, grillId);
+    await this.setCapabilityValue(`togrill_grill_type.probe${probeIdx + 1}`, grillId).catch(this.error);
+  }
+
+  async setTaste(probeIdx, tasteIdValue) {
+    await this._setTaste(probeIdx, tasteIdValue);
+    await this.setCapabilityValue(`togrill_taste.probe${probeIdx + 1}`, tasteIdValue).catch(this.error);
+  }
+
+  // Device-settings UI: write alarm interval (minutes) to the device when changed.
+  async onSettings({ newSettings, changedKeys }) {
+    if (changedKeys.includes('alarm_interval')) {
+      const interval = Number(newSettings.alarm_interval);
+      try {
+        await this._write(protocol.encodeAlarmSettings(0, interval));  // 0 = °C, keep unit
+        this.log(`Alarm interval set to ${interval} min`);
+      } catch (e) {
+        this.error(`Failed to write alarm interval: ${e.message}`);
+        throw new Error(this.homey.__('errors.not_connected') || 'Device not connected');
+      }
+    }
+  }
 
 }
 
