@@ -5,12 +5,7 @@
       "title": { "en": "Probe reached target temperature", "sv": "Sond nådde måltemperatur" },
       "hint":  { "en": "Fires when a probe reaches its set target temperature.", "sv": "Utlöses när en sond når sin inställda måltemperatur." },
       "tokens": [
-        {
-          "name": "probe",
-          "type": "number",
-          "title": { "en": "Probe number", "sv": "Sondnummer" },
-          "example": 1
-        }
+        { "name": "probe", "type": "number", "title": { "en": "Probe number", "sv": "Sondnummer" }, "example": 1 }
       ]
     },
     {
@@ -18,12 +13,7 @@
       "title": { "en": "Probe disconnected", "sv": "Sond urkopplad" },
       "hint":  { "en": "Fires when a probe is unplugged from the device.", "sv": "Utlöses när en sond kopplas ur." },
       "tokens": [
-        {
-          "name": "probe",
-          "type": "number",
-          "title": { "en": "Probe number", "sv": "Sondnummer" },
-          "example": 1
-        }
+        { "name": "probe", "type": "number", "title": { "en": "Probe number", "sv": "Sondnummer" }, "example": 1 }
       ]
     },
     {
@@ -31,12 +21,7 @@
       "title": { "en": "Grill temperature too high", "sv": "Grilltemperatur för hög" },
       "hint":  { "en": "Fires when the grill temperature rises above the set Grill Max.", "sv": "Utlöses när grilltemperaturen stiger över inställt Grill max." },
       "tokens": [
-        {
-          "name": "temperature",
-          "type": "number",
-          "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
-          "example": 285
-        }
+        { "name": "temperature", "type": "number", "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" }, "example": 285 }
       ]
     },
     {
@@ -44,12 +29,7 @@
       "title": { "en": "Grill temperature too low", "sv": "Grilltemperatur för låg" },
       "hint":  { "en": "Fires when the grill temperature drops below the set Grill Min (e.g. fire dying).", "sv": "Utlöses när grilltemperaturen sjunker under inställt Grill min (t.ex. elden dör)." },
       "tokens": [
-        {
-          "name": "temperature",
-          "type": "number",
-          "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
-          "example": 95
-        }
+        { "name": "temperature", "type": "number", "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" }, "example": 95 }
       ]
     },
     {
@@ -57,12 +37,7 @@
       "title": { "en": "Battery low", "sv": "Batteri lågt" },
       "hint":  { "en": "Fires when the device battery drops below 20 %.", "sv": "Utlöses när enhetens batteri sjunker under 20 %." },
       "tokens": [
-        {
-          "name": "battery_level",
-          "type": "number",
-          "title": { "en": "Battery level (%)", "sv": "Batterinivå (%)" },
-          "example": 15
-        }
+        { "name": "battery_level", "type": "number", "title": { "en": "Battery level (%)", "sv": "Batterinivå (%)" }, "example": 15 }
       ]
     }
   ],
@@ -76,26 +51,8 @@
       },
       "hint": { "en": "True when the selected probe is hotter than the given value.", "sv": "Sant när vald sond är varmare än angivet värde." },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1",       "label": { "en": "Probe 1",     "sv": "Sond 1" } },
-            { "id": "2",       "label": { "en": "Probe 2",     "sv": "Sond 2" } },
-            { "id": "3",       "label": { "en": "Probe 3",     "sv": "Sond 3" } },
-            { "id": "4",       "label": { "en": "Probe 4",     "sv": "Sond 4" } },
-            { "id": "ambient", "label": { "en": "Grill (ambient)", "sv": "Grill (ambient)" } }
-          ]
-        },
-        {
-          "name": "temperature",
-          "type": "number",
-          "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
-          "min": 0,
-          "max": 300,
-          "step": 1
-        }
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
+        { "name": "temperature", "type": "number", "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" }, "min": 0, "max": 300, "step": 1 }
       ]
     }
   ],
@@ -109,25 +66,8 @@
       },
       "hint": { "en": "Alarm fires when the probe reaches this temperature.", "sv": "Larm utlöses när sonden når denna temperatur." },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
-            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } },
-            { "id": "3", "label": { "en": "Probe 3", "sv": "Sond 3" } },
-            { "id": "4", "label": { "en": "Probe 4", "sv": "Sond 4" } }
-          ]
-        },
-        {
-          "name": "temperature",
-          "type": "number",
-          "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
-          "min": 0,
-          "max": 300,
-          "step": 1
-        }
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
+        { "name": "temperature", "type": "number", "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" }, "min": 0, "max": 300, "step": 1 }
       ]
     },
     {
@@ -138,25 +78,8 @@
         "sv": "Ange timer för sond [[probe]] till [[seconds]] sekunder"
       },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
-            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } },
-            { "id": "3", "label": { "en": "Probe 3", "sv": "Sond 3" } },
-            { "id": "4", "label": { "en": "Probe 4", "sv": "Sond 4" } }
-          ]
-        },
-        {
-          "name": "seconds",
-          "type": "number",
-          "title": { "en": "Seconds", "sv": "Sekunder" },
-          "min": 0,
-          "max": 7200,
-          "step": 60
-        }
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
+        { "name": "seconds", "type": "number", "title": { "en": "Seconds", "sv": "Sekunder" }, "min": 0, "max": 7200, "step": 60 }
       ]
     },
     {
@@ -168,33 +91,9 @@
       },
       "hint": { "en": "Alarm fires if temperature goes below min or above max.", "sv": "Larm utlöses om temperaturen understiger min eller överstiger max." },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
-            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } },
-            { "id": "3", "label": { "en": "Probe 3", "sv": "Sond 3" } },
-            { "id": "4", "label": { "en": "Probe 4", "sv": "Sond 4" } }
-          ]
-        },
-        {
-          "name": "min_temp",
-          "type": "number",
-          "title": { "en": "Min temp (°C)", "sv": "Min temp (°C)" },
-          "min": 0,
-          "max": 300,
-          "step": 1
-        },
-        {
-          "name": "max_temp",
-          "type": "number",
-          "title": { "en": "Max temp (°C)", "sv": "Max temp (°C)" },
-          "min": 0,
-          "max": 300,
-          "step": 1
-        }
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
+        { "name": "min_temp", "type": "number", "title": { "en": "Min temp (°C)", "sv": "Min temp (°C)" }, "min": 0, "max": 300, "step": 1 },
+        { "name": "max_temp", "type": "number", "title": { "en": "Max temp (°C)", "sv": "Max temp (°C)" }, "min": 0, "max": 300, "step": 1 }
       ]
     },
     {
@@ -206,15 +105,7 @@
       },
       "hint": { "en": "Selects the meat preset for the probe (works with Taste).", "sv": "Väljer köttförinställning för sonden (fungerar med stekgrad)." },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
-            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } }
-          ]
-        },
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
         {
           "name": "grill_type",
           "type": "dropdown",
@@ -249,15 +140,7 @@
       },
       "hint": { "en": "Selects the desired doneness for the probe (works with Grill type).", "sv": "Väljer önskad stekgrad för sonden (fungerar med grilltyp)." },
       "args": [
-        {
-          "name": "probe",
-          "type": "dropdown",
-          "title": { "en": "Probe", "sv": "Sond" },
-          "values": [
-            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
-            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } }
-          ]
-        },
+        { "name": "probe", "type": "autocomplete", "title": { "en": "Probe", "sv": "Sond" } },
         {
           "name": "taste",
           "type": "dropdown",
