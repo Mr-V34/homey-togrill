@@ -28,14 +28,27 @@
     },
     {
       "id": "ambient_critical",
-      "title": { "en": "Grill temperature critical", "sv": "Grilltemperatur kritisk" },
-      "hint":  { "en": "Fires when the grill temperature exceeds 280 °C.", "sv": "Utlöses när grilltemperaturen överstiger 280 °C." },
+      "title": { "en": "Grill temperature too high", "sv": "Grilltemperatur för hög" },
+      "hint":  { "en": "Fires when the grill temperature rises above the set Grill Max.", "sv": "Utlöses när grilltemperaturen stiger över inställt Grill max." },
       "tokens": [
         {
           "name": "temperature",
           "type": "number",
           "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
           "example": 285
+        }
+      ]
+    },
+    {
+      "id": "grill_temp_low",
+      "title": { "en": "Grill temperature too low", "sv": "Grilltemperatur för låg" },
+      "hint":  { "en": "Fires when the grill temperature drops below the set Grill Min (e.g. fire dying).", "sv": "Utlöses när grilltemperaturen sjunker under inställt Grill min (t.ex. elden dör)." },
+      "tokens": [
+        {
+          "name": "temperature",
+          "type": "number",
+          "title": { "en": "Temperature (°C)", "sv": "Temperatur (°C)" },
+          "example": 95
         }
       ]
     },

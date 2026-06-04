@@ -1,4 +1,8 @@
 {
+  "1.2.0": {
+    "en": "Monitor your grill (ambient) temperature range: set Grill Min and Grill Max on the device and get separate alarms — and Flow triggers — when the grill runs too low (fire dying) or too high. Ideal for long, low-and-slow BBQ sessions. Set a threshold to 0 to disable it.",
+    "sv": "Övervaka grillens (omgivningens) temperaturintervall: ställ in Grill min och Grill max på enheten och få separata larm — och Flow-utlösare — när grillen blir för låg (elden dör) eller för hög. Perfekt för långa BBQ-pass. Sätt ett tröskelvärde till 0 för att stänga av det."
+  },
   "1.1.0": {
     "en": "New cooking presets: set a Grill type (the meat) and Taste (doneness) per probe, just like the device's own menu — directly on the device or from Flows. Added an adjustable alarm interval. Matches the feature set of the Home Assistant ToGrill integration.",
     "sv": "Nya tillagningsförinställningar: ange Grilltyp (köttet) och Stekgrad per sond, precis som enhetens egen meny — direkt på enheten eller via Flows. Lade till justerbart larmintervall. Matchar funktionerna i Home Assistants ToGrill-integration."
