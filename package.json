@@ -1,6 +1,6 @@
 {
   "name": "com.togrill",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "ToGrill BBQ Thermometer for Homey Pro",
   "main": "app.js",
   "engines": { "node": ">=18.0.0" },
