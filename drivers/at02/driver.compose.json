@@ -16,7 +16,11 @@
     "togrill_target.probe2",
     "togrill_timer.probe1",
     "togrill_min.probe1",
-    "togrill_max.probe1"
+    "togrill_max.probe1",
+    "togrill_grill_type.probe1",
+    "togrill_grill_type.probe2",
+    "togrill_taste.probe1",
+    "togrill_taste.probe2"
   ],
   "capabilitiesOptions": {
     "measure_temperature.probe1":        { "title": { "en": "Probe 1",          "sv": "Sond 1" } },
@@ -32,7 +36,11 @@
     "togrill_target.probe2": { "title": { "en": "Target – Probe 2", "sv": "Mål – Sond 2" } },
     "togrill_timer.probe1":  { "title": { "en": "Timer – Probe 1",  "sv": "Timer – Sond 1" } },
     "togrill_min.probe1":    { "title": { "en": "Min – Probe 1",    "sv": "Min – Sond 1" } },
-    "togrill_max.probe1":    { "title": { "en": "Max – Probe 1",    "sv": "Max – Sond 1" } }
+    "togrill_max.probe1":    { "title": { "en": "Max – Probe 1",    "sv": "Max – Sond 1" } },
+    "togrill_grill_type.probe1": { "title": { "en": "Grill Type – Probe 1", "sv": "Grilltyp – Sond 1" } },
+    "togrill_grill_type.probe2": { "title": { "en": "Grill Type – Probe 2", "sv": "Grilltyp – Sond 2" } },
+    "togrill_taste.probe1":      { "title": { "en": "Taste – Probe 1",      "sv": "Stekgrad – Sond 1" } },
+    "togrill_taste.probe2":      { "title": { "en": "Taste – Probe 2",      "sv": "Stekgrad – Sond 2" } }
   },
   "images": {
     "small":  "/drivers/at02/assets/images/small.png",

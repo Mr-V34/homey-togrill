@@ -1,0 +1,27 @@
+{
+  "type": "enum",
+  "title": { "en": "Grill Type", "sv": "Grilltyp" },
+  "desc": { "en": "The meat currently being measured", "sv": "Köttet som mäts just nu" },
+  "getable": true,
+  "setable": true,
+  "uiComponent": "picker",
+  "insights": false,
+  "values": [
+    { "id": "none",       "title": { "en": "None",        "sv": "Ingen" } },
+    { "id": "beef",       "title": { "en": "Beef",        "sv": "Nötkött" } },
+    { "id": "veal",       "title": { "en": "Veal",        "sv": "Kalv" } },
+    { "id": "lamb",       "title": { "en": "Lamb",        "sv": "Lamm" } },
+    { "id": "pork",       "title": { "en": "Pork",        "sv": "Fläsk" } },
+    { "id": "turkey",     "title": { "en": "Turkey",      "sv": "Kalkon" } },
+    { "id": "chicken",    "title": { "en": "Chicken",     "sv": "Kyckling" } },
+    { "id": "sausage",    "title": { "en": "Sausage",     "sv": "Korv" } },
+    { "id": "fish",       "title": { "en": "Fish",        "sv": "Fisk" } },
+    { "id": "hamburger",  "title": { "en": "Hamburger",   "sv": "Hamburgare" } },
+    { "id": "bbq_smoke",  "title": { "en": "BBQ Smoke",   "sv": "BBQ-rök" } },
+    { "id": "hot_smoke",  "title": { "en": "Hot Smoke",   "sv": "Varmrök" } },
+    { "id": "cold_smoke", "title": { "en": "Cold Smoke",  "sv": "Kallrök" } },
+    { "id": "mark_a",     "title": { "en": "Mark A",      "sv": "Märke A" } },
+    { "id": "mark_b",     "title": { "en": "Mark B",      "sv": "Märke B" } },
+    { "id": "mark_c",     "title": { "en": "Mark C",      "sv": "Märke C" } }
+  ]
+}

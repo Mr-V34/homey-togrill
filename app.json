@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.togrill",
-  "version": "1.0.11",
+  "version": "1.1.0",
   "compatibility": ">=6.0.0",
   "sdk": 3,
   "platforms": [
@@ -472,6 +472,272 @@
             "step": 1
           }
         ]
+      },
+      {
+        "id": "set_grill_type",
+        "title": {
+          "en": "Set grill type",
+          "sv": "Ange grilltyp"
+        },
+        "titleFormatted": {
+          "en": "Set grill type for probe [[probe]] to [[grill_type]]",
+          "sv": "Ange grilltyp för sond [[probe]] till [[grill_type]]"
+        },
+        "hint": {
+          "en": "Selects the meat preset for the probe (works with Taste).",
+          "sv": "Väljer köttförinställning för sonden (fungerar med stekgrad)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              }
+            ]
+          },
+          {
+            "name": "grill_type",
+            "type": "dropdown",
+            "title": {
+              "en": "Grill type",
+              "sv": "Grilltyp"
+            },
+            "values": [
+              {
+                "id": "none",
+                "label": {
+                  "en": "None",
+                  "sv": "Ingen"
+                }
+              },
+              {
+                "id": "beef",
+                "label": {
+                  "en": "Beef",
+                  "sv": "Nötkött"
+                }
+              },
+              {
+                "id": "veal",
+                "label": {
+                  "en": "Veal",
+                  "sv": "Kalv"
+                }
+              },
+              {
+                "id": "lamb",
+                "label": {
+                  "en": "Lamb",
+                  "sv": "Lamm"
+                }
+              },
+              {
+                "id": "pork",
+                "label": {
+                  "en": "Pork",
+                  "sv": "Fläsk"
+                }
+              },
+              {
+                "id": "turkey",
+                "label": {
+                  "en": "Turkey",
+                  "sv": "Kalkon"
+                }
+              },
+              {
+                "id": "chicken",
+                "label": {
+                  "en": "Chicken",
+                  "sv": "Kyckling"
+                }
+              },
+              {
+                "id": "sausage",
+                "label": {
+                  "en": "Sausage",
+                  "sv": "Korv"
+                }
+              },
+              {
+                "id": "fish",
+                "label": {
+                  "en": "Fish",
+                  "sv": "Fisk"
+                }
+              },
+              {
+                "id": "hamburger",
+                "label": {
+                  "en": "Hamburger",
+                  "sv": "Hamburgare"
+                }
+              },
+              {
+                "id": "bbq_smoke",
+                "label": {
+                  "en": "BBQ Smoke",
+                  "sv": "BBQ-rök"
+                }
+              },
+              {
+                "id": "hot_smoke",
+                "label": {
+                  "en": "Hot Smoke",
+                  "sv": "Varmrök"
+                }
+              },
+              {
+                "id": "cold_smoke",
+                "label": {
+                  "en": "Cold Smoke",
+                  "sv": "Kallrök"
+                }
+              },
+              {
+                "id": "mark_a",
+                "label": {
+                  "en": "Mark A",
+                  "sv": "Märke A"
+                }
+              },
+              {
+                "id": "mark_b",
+                "label": {
+                  "en": "Mark B",
+                  "sv": "Märke B"
+                }
+              },
+              {
+                "id": "mark_c",
+                "label": {
+                  "en": "Mark C",
+                  "sv": "Märke C"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "set_taste",
+        "title": {
+          "en": "Set taste",
+          "sv": "Ange stekgrad"
+        },
+        "titleFormatted": {
+          "en": "Set taste for probe [[probe]] to [[taste]]",
+          "sv": "Ange stekgrad för sond [[probe]] till [[taste]]"
+        },
+        "hint": {
+          "en": "Selects the desired doneness for the probe (works with Grill type).",
+          "sv": "Väljer önskad stekgrad för sonden (fungerar med grilltyp)."
+        },
+        "args": [
+          {
+            "type": "device",
+            "name": "device",
+            "filter": "driver_id=at02"
+          },
+          {
+            "name": "probe",
+            "type": "dropdown",
+            "title": {
+              "en": "Probe",
+              "sv": "Sond"
+            },
+            "values": [
+              {
+                "id": "1",
+                "label": {
+                  "en": "Probe 1",
+                  "sv": "Sond 1"
+                }
+              },
+              {
+                "id": "2",
+                "label": {
+                  "en": "Probe 2",
+                  "sv": "Sond 2"
+                }
+              }
+            ]
+          },
+          {
+            "name": "taste",
+            "type": "dropdown",
+            "title": {
+              "en": "Taste",
+              "sv": "Stekgrad"
+            },
+            "values": [
+              {
+                "id": "none",
+                "label": {
+                  "en": "None",
+                  "sv": "Ingen"
+                }
+              },
+              {
+                "id": "rare",
+                "label": {
+                  "en": "Rare",
+                  "sv": "Blodig"
+                }
+              },
+              {
+                "id": "medium_rare",
+                "label": {
+                  "en": "Medium rare",
+                  "sv": "Halvblodig"
+                }
+              },
+              {
+                "id": "medium",
+                "label": {
+                  "en": "Medium",
+                  "sv": "Medium"
+                }
+              },
+              {
+                "id": "medium_well",
+                "label": {
+                  "en": "Medium well",
+                  "sv": "Halvgenomstekt"
+                }
+              },
+              {
+                "id": "well_done",
+                "label": {
+                  "en": "Well done",
+                  "sv": "Genomstekt"
+                }
+              }
+            ]
+          }
+        ]
       }
     ]
   },
@@ -497,7 +763,11 @@
         "togrill_target.probe2",
         "togrill_timer.probe1",
         "togrill_min.probe1",
-        "togrill_max.probe1"
+        "togrill_max.probe1",
+        "togrill_grill_type.probe1",
+        "togrill_grill_type.probe2",
+        "togrill_taste.probe1",
+        "togrill_taste.probe2"
       ],
       "capabilitiesOptions": {
         "measure_temperature.probe1": {
@@ -583,6 +853,30 @@
             "en": "Max – Probe 1",
             "sv": "Max – Sond 1"
           }
+        },
+        "togrill_grill_type.probe1": {
+          "title": {
+            "en": "Grill Type – Probe 1",
+            "sv": "Grilltyp – Sond 1"
+          }
+        },
+        "togrill_grill_type.probe2": {
+          "title": {
+            "en": "Grill Type – Probe 2",
+            "sv": "Grilltyp – Sond 2"
+          }
+        },
+        "togrill_taste.probe1": {
+          "title": {
+            "en": "Taste – Probe 1",
+            "sv": "Stekgrad – Sond 1"
+          }
+        },
+        "togrill_taste.probe2": {
+          "title": {
+            "en": "Taste – Probe 2",
+            "sv": "Stekgrad – Sond 2"
+          }
         }
       },
       "images": {
@@ -635,11 +929,156 @@
             "sv": "Antal detekterade sonder"
           },
           "value": "Unknown"
+        },
+        {
+          "id": "alarm_interval",
+          "type": "number",
+          "label": {
+            "en": "Alarm interval (minutes)",
+            "sv": "Larmintervall (minuter)"
+          },
+          "hint": {
+            "en": "Minutes between repeated alarms on the device.",
+            "sv": "Minuter mellan upprepade larm på enheten."
+          },
+          "value": 5,
+          "min": 1,
+          "max": 60,
+          "step": 1
         }
       ]
     }
   ],
   "capabilities": {
+    "togrill_grill_type": {
+      "type": "enum",
+      "title": {
+        "en": "Grill Type",
+        "sv": "Grilltyp"
+      },
+      "desc": {
+        "en": "The meat currently being measured",
+        "sv": "Köttet som mäts just nu"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "picker",
+      "insights": false,
+      "values": [
+        {
+          "id": "none",
+          "title": {
+            "en": "None",
+            "sv": "Ingen"
+          }
+        },
+        {
+          "id": "beef",
+          "title": {
+            "en": "Beef",
+            "sv": "Nötkött"
+          }
+        },
+        {
+          "id": "veal",
+          "title": {
+            "en": "Veal",
+            "sv": "Kalv"
+          }
+        },
+        {
+          "id": "lamb",
+          "title": {
+            "en": "Lamb",
+            "sv": "Lamm"
+          }
+        },
+        {
+          "id": "pork",
+          "title": {
+            "en": "Pork",
+            "sv": "Fläsk"
+          }
+        },
+        {
+          "id": "turkey",
+          "title": {
+            "en": "Turkey",
+            "sv": "Kalkon"
+          }
+        },
+        {
+          "id": "chicken",
+          "title": {
+            "en": "Chicken",
+            "sv": "Kyckling"
+          }
+        },
+        {
+          "id": "sausage",
+          "title": {
+            "en": "Sausage",
+            "sv": "Korv"
+          }
+        },
+        {
+          "id": "fish",
+          "title": {
+            "en": "Fish",
+            "sv": "Fisk"
+          }
+        },
+        {
+          "id": "hamburger",
+          "title": {
+            "en": "Hamburger",
+            "sv": "Hamburgare"
+          }
+        },
+        {
+          "id": "bbq_smoke",
+          "title": {
+            "en": "BBQ Smoke",
+            "sv": "BBQ-rök"
+          }
+        },
+        {
+          "id": "hot_smoke",
+          "title": {
+            "en": "Hot Smoke",
+            "sv": "Varmrök"
+          }
+        },
+        {
+          "id": "cold_smoke",
+          "title": {
+            "en": "Cold Smoke",
+            "sv": "Kallrök"
+          }
+        },
+        {
+          "id": "mark_a",
+          "title": {
+            "en": "Mark A",
+            "sv": "Märke A"
+          }
+        },
+        {
+          "id": "mark_b",
+          "title": {
+            "en": "Mark B",
+            "sv": "Märke B"
+          }
+        },
+        {
+          "id": "mark_c",
+          "title": {
+            "en": "Mark C",
+            "sv": "Märke C"
+          }
+        }
+      ]
+    },
     "togrill_max": {
       "type": "number",
       "title": {
@@ -696,6 +1135,65 @@
       "step": 1,
       "units": "°C",
       "insights": false
+    },
+    "togrill_taste": {
+      "type": "enum",
+      "title": {
+        "en": "Taste",
+        "sv": "Stekgrad"
+      },
+      "desc": {
+        "en": "The doneness wanted when finished",
+        "sv": "Önskad stekgrad när klar"
+      },
+      "getable": true,
+      "setable": true,
+      "uiComponent": "picker",
+      "insights": false,
+      "values": [
+        {
+          "id": "none",
+          "title": {
+            "en": "None",
+            "sv": "Ingen"
+          }
+        },
+        {
+          "id": "rare",
+          "title": {
+            "en": "Rare",
+            "sv": "Blodig"
+          }
+        },
+        {
+          "id": "medium_rare",
+          "title": {
+            "en": "Medium rare",
+            "sv": "Halvblodig"
+          }
+        },
+        {
+          "id": "medium",
+          "title": {
+            "en": "Medium",
+            "sv": "Medium"
+          }
+        },
+        {
+          "id": "medium_well",
+          "title": {
+            "en": "Medium well",
+            "sv": "Halvgenomstekt"
+          }
+        },
+        {
+          "id": "well_done",
+          "title": {
+            "en": "Well done",
+            "sv": "Genomstekt"
+          }
+        }
+      ]
     },
     "togrill_timer": {
       "type": "number",

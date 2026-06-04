@@ -183,6 +183,82 @@
           "step": 1
         }
       ]
+    },
+    {
+      "id": "set_grill_type",
+      "title": { "en": "Set grill type", "sv": "Ange grilltyp" },
+      "titleFormatted": {
+        "en": "Set grill type for probe [[probe]] to [[grill_type]]",
+        "sv": "Ange grilltyp för sond [[probe]] till [[grill_type]]"
+      },
+      "hint": { "en": "Selects the meat preset for the probe (works with Taste).", "sv": "Väljer köttförinställning för sonden (fungerar med stekgrad)." },
+      "args": [
+        {
+          "name": "probe",
+          "type": "dropdown",
+          "title": { "en": "Probe", "sv": "Sond" },
+          "values": [
+            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
+            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } }
+          ]
+        },
+        {
+          "name": "grill_type",
+          "type": "dropdown",
+          "title": { "en": "Grill type", "sv": "Grilltyp" },
+          "values": [
+            { "id": "none",       "label": { "en": "None",        "sv": "Ingen" } },
+            { "id": "beef",       "label": { "en": "Beef",        "sv": "Nötkött" } },
+            { "id": "veal",       "label": { "en": "Veal",        "sv": "Kalv" } },
+            { "id": "lamb",       "label": { "en": "Lamb",        "sv": "Lamm" } },
+            { "id": "pork",       "label": { "en": "Pork",        "sv": "Fläsk" } },
+            { "id": "turkey",     "label": { "en": "Turkey",      "sv": "Kalkon" } },
+            { "id": "chicken",    "label": { "en": "Chicken",     "sv": "Kyckling" } },
+            { "id": "sausage",    "label": { "en": "Sausage",     "sv": "Korv" } },
+            { "id": "fish",       "label": { "en": "Fish",        "sv": "Fisk" } },
+            { "id": "hamburger",  "label": { "en": "Hamburger",   "sv": "Hamburgare" } },
+            { "id": "bbq_smoke",  "label": { "en": "BBQ Smoke",   "sv": "BBQ-rök" } },
+            { "id": "hot_smoke",  "label": { "en": "Hot Smoke",   "sv": "Varmrök" } },
+            { "id": "cold_smoke", "label": { "en": "Cold Smoke",  "sv": "Kallrök" } },
+            { "id": "mark_a",     "label": { "en": "Mark A",      "sv": "Märke A" } },
+            { "id": "mark_b",     "label": { "en": "Mark B",      "sv": "Märke B" } },
+            { "id": "mark_c",     "label": { "en": "Mark C",      "sv": "Märke C" } }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "set_taste",
+      "title": { "en": "Set taste", "sv": "Ange stekgrad" },
+      "titleFormatted": {
+        "en": "Set taste for probe [[probe]] to [[taste]]",
+        "sv": "Ange stekgrad för sond [[probe]] till [[taste]]"
+      },
+      "hint": { "en": "Selects the desired doneness for the probe (works with Grill type).", "sv": "Väljer önskad stekgrad för sonden (fungerar med grilltyp)." },
+      "args": [
+        {
+          "name": "probe",
+          "type": "dropdown",
+          "title": { "en": "Probe", "sv": "Sond" },
+          "values": [
+            { "id": "1", "label": { "en": "Probe 1", "sv": "Sond 1" } },
+            { "id": "2", "label": { "en": "Probe 2", "sv": "Sond 2" } }
+          ]
+        },
+        {
+          "name": "taste",
+          "type": "dropdown",
+          "title": { "en": "Taste", "sv": "Stekgrad" },
+          "values": [
+            { "id": "none",        "label": { "en": "None",        "sv": "Ingen" } },
+            { "id": "rare",        "label": { "en": "Rare",        "sv": "Blodig" } },
+            { "id": "medium_rare", "label": { "en": "Medium rare", "sv": "Halvblodig" } },
+            { "id": "medium",      "label": { "en": "Medium",      "sv": "Medium" } },
+            { "id": "medium_well", "label": { "en": "Medium well", "sv": "Halvgenomstekt" } },
+            { "id": "well_done",   "label": { "en": "Well done",   "sv": "Genomstekt" } }
+          ]
+        }
+      ]
     }
   ]
 }
