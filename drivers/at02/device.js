@@ -33,6 +33,7 @@ class ToGrillDevice extends Homey.Device {
     this._lastChannels    = [];         // last raw A1 channel temps (null = unplugged)
     this._visSig          = null;       // signature of the currently-shown probe/ambient set
     this._rssiTimer       = null;       // dedicated 1-minute signal-strength refresh
+    this._lastBattery     = null;       // last known battery %, preserved across the battery-cap migration
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
@@ -43,6 +44,7 @@ class ToGrillDevice extends Homey.Device {
     // Migration: add capabilities introduced in updates to already-paired
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
+    await this._migrateBatteryDisplay();
 
     // Register capability listeners for every control capability that currently
     // exists. Capabilities hidden for unplugged probes get their listener back
@@ -98,8 +100,8 @@ class ToGrillDevice extends Homey.Device {
   // missing grill sensor stay hidden instead of cluttering the device view.
   async _ensureCapabilities() {
     const base = {
-      'measure_battery':                  null,  // standard cap, defines its own icon
       'togrill_rssi':                     null,  // capability defines its own title
+      'togrill_battery':                  null,  // capability defines its own title
       'alarm_generic.probe_disconnected': { en: 'Probe Disconnected', sv: 'Sond urkopplad' },
     };
     for (const [cap, title] of Object.entries(base)) {
@@ -112,6 +114,35 @@ class ToGrillDevice extends Homey.Device {
           this.error(`addCapability ${cap} failed: ${e.message}`);
         }
       }
+    }
+  }
+
+  // v1.4.0: the standard measure_battery is rendered by Homey as a separate
+  // battery element (driven by energy.batteries) and never sits in the sensor
+  // grid next to the signal strength. Replace it with a plain togrill_battery
+  // sensor and place signal + battery side by side. Runtime-added capabilities
+  // append at the end of the tile order, so we remove and re-add both to make
+  // them adjacent — once, guarded by a store flag.
+  async _migrateBatteryDisplay() {
+    if (this.hasCapability('measure_battery')) {
+      const v = this.getCapabilityValue('measure_battery');
+      if (v != null) this._lastBattery = v;
+      await this.removeCapability('measure_battery')
+        .catch(e => this.error(`removeCapability measure_battery failed: ${e.message}`));
+    }
+    if (this.getStoreValue('battSig_v140')) return;
+    try {
+      if (this.hasCapability('togrill_rssi'))    await this.removeCapability('togrill_rssi');
+      if (this.hasCapability('togrill_battery')) await this.removeCapability('togrill_battery');
+      await this.addCapability('togrill_rssi');
+      await this.addCapability('togrill_battery');
+      if (this._lastBattery != null) {
+        await this.setCapabilityValue('togrill_battery', this._lastBattery).catch(() => {});
+      }
+      await this.setStoreValue('battSig_v140', true);
+      this.log('Placed signal strength + battery side by side');
+    } catch (e) {
+      this.error(`Battery/signal reorder failed: ${e.message}`);
     }
   }
 
@@ -468,7 +499,8 @@ class ToGrillDevice extends Homey.Device {
     // Probe count / ambient flag affect which capabilities should be shown —
     // force the next temperature frame to re-evaluate visibility.
     if (probeCountChanged) this._visSig = null;
-    this.setCapabilityValue('measure_battery', p.battery).catch(this.error);
+    this._lastBattery = p.battery;
+    this.setCapabilityValue('togrill_battery', p.battery).catch(this.error);
     this.setSettings({
       firmware_version: p.version,
       probe_count:      String(p.probeCount),
