@@ -1,7 +1,7 @@
 {
   "1.5.1": {
-    "en": "Per-probe alarms now trigger reliably: a probe's alarm lights up as soon as it reaches its Target or goes over its Max, evaluated live in the app instead of waiting for the device to report it.",
-    "sv": "Sondlarm utlöses nu pålitligt: en sonds larm tänds så snart den når sitt Mål eller går över sitt Max, utvärderat live i appen i stället för att vänta på att enheten rapporterar det."
+    "en": "Per-probe alarms now trigger reliably: a probe's alarm lights up as soon as it reaches its Target or goes over its Max, evaluated live in the app instead of waiting for the device to report it. Probe temperature sliders now top out at 120 °C, while the grill (ambient) sliders go up to 280 °C.",
+    "sv": "Sondlarm utlöses nu pålitligt: en sonds larm tänds så snart den når sitt Mål eller går över sitt Max, utvärderat live i appen i stället för att vänta på att enheten rapporterar det. Sondernas temperaturreglage går nu till 120 °C, medan grillens (omgivningens) reglage går upp till 280 °C."
   },
   "1.5.0": {
     "en": "Initial release.",

@@ -46,6 +46,7 @@ class ToGrillDevice extends Homey.Device {
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
     await this._migrateBatteryDisplay();
+    await this._migrateScales_v151();
 
     // Register capability listeners for every control capability that currently
     // exists. Capabilities hidden for unplugged probes get their listener back
@@ -175,6 +176,42 @@ class ToGrillDevice extends Homey.Device {
     ];
   }
 
+  // Numeric slider range per capability instance. Meat probes top out at 120 °C
+  // (no food is cooked hotter); the grill (ambient) sensor goes up to 280 °C.
+  // Applied both when a capability is (re-)added at runtime and by the migration
+  // for already-paired devices, since Homey doesn't push manifest option changes
+  // to capability instances that already exist.
+  _numOpts(cap) {
+    if (/^togrill_(?:target|min|max)\.probe\d$/.test(cap)) {
+      return { min: 0, max: 120, step: 1, units: '°C' };
+    }
+    if (cap === 'togrill_min.ambient' || cap === 'togrill_max.ambient') {
+      return { min: 0, max: 280, step: 1, units: '°C' };
+    }
+    return null;
+  }
+
+  // v1.5.1: tightened the temperature slider ranges (probe 0–120, grill 0–280).
+  // Existing capability instances keep their old options until we set them again.
+  async _migrateScales_v151() {
+    if (this.getStoreValue('scales_v151')) return;
+    try {
+      const caps = [];
+      for (let n = 1; n <= 4; n++) caps.push(...this._probeCaps(n));
+      caps.push(...this._ambientCaps());
+      for (const { cap, title } of caps) {
+        const num = this._numOpts(cap);
+        if (num && this.hasCapability(cap)) {
+          await this.setCapabilityOptions(cap, { ...(title ? { title } : {}), ...num }).catch(() => {});
+        }
+      }
+      await this.setStoreValue('scales_v151', true);
+      this.log('Applied v1.5.1 temperature scales (probe 0–120 °C, grill 0–280 °C)');
+    } catch (e) {
+      this.error(`Scale migration failed: ${e.message}`);
+    }
+  }
+
   // Re-evaluate the grill (ambient) alarms after a Grill Min/Max change. Deferred
   // one tick so the new capability value is committed first. Monitored app-side
   // (the device has no protocol support for ambient thresholds).
@@ -215,7 +252,8 @@ class ToGrillDevice extends Homey.Device {
     if (want && !has) {
       try {
         await this.addCapability(cap);
-        if (title) await this.setCapabilityOptions(cap, { title });
+        const opts = { ...(title ? { title } : {}), ...(this._numOpts(cap) || {}) };
+        if (Object.keys(opts).length) await this.setCapabilityOptions(cap, opts);
         this._registerListenerFor(cap);
       } catch (e) { this.error(`addCapability ${cap} failed: ${e.message}`); }
     } else if (!want && has) {
