@@ -516,15 +516,25 @@ class ToGrillDevice extends Homey.Device {
 
   async _onTemperatures(p) {
     const probeNames = ['probe1', 'probe2', 'probe3', 'probe4'];
-    const probeCount = this._deviceStatus ? this._deviceStatus.probeCount : 4;
     // Default to "has ambient" until the device tells us otherwise, so we never
     // hide the grill sensor while the status frame is still pending.
     const hasAmbient = this._deviceStatus ? this._deviceStatus.hasAmbient : true;
 
+    // The grill (ambient) sensor is always the LAST channel; the probe slots are
+    // the leading channels (with 0xFFFF/null filler for empty ports). Scan ALL
+    // four probe slots directly instead of trusting the device's reported
+    // probe_count — otherwise a probe moved to a higher port (e.g. port 4) is
+    // never read when the count is lower, so it never shows up. Empty/filler
+    // slots read null and are simply treated as "not connected".
+    const probeSlots = (hasAmbient && p.channels.length > 0)
+      ? p.channels.length - 1
+      : p.channels.length;
+    const nProbes = Math.min(4, probeSlots);
+
     // Which probes are plugged in right now, read straight from the raw frame so
     // it works even when a probe's capabilities are currently hidden.
     const active = new Set();
-    for (let i = 0; i < probeCount && i < p.channels.length; i++) {
+    for (let i = 0; i < nProbes; i++) {
       if (p.channels[i] !== null) active.add(i);
     }
     this._lastChannels = p.channels;
@@ -533,7 +543,7 @@ class ToGrillDevice extends Homey.Device {
     // and now isn't counts as a real mid-cook disconnection. Probes that were
     // never plugged in simply stay hidden (see _syncProbeVisibility) and never
     // raise the alarm.
-    for (let i = 0; i < probeCount; i++) {
+    for (let i = 0; i < nProbes; i++) {
       const wasActive = this._prevActive.has(i);
       const isActive  = active.has(i);
       if (wasActive && !isActive) {
@@ -554,6 +564,8 @@ class ToGrillDevice extends Homey.Device {
     const sig = [...active].sort().join(',') + `|amb:${hasAmbient}`;
     if (sig !== this._visSig) {
       this._visSig = sig;
+      this.log(`Visible probes: [${[...active].map(i => i + 1).join(', ') || 'none'}] `
+        + `(channels=${JSON.stringify(p.channels)}, ambient=${hasAmbient})`);
       await this._syncProbeVisibility(active, hasAmbient);
     }
 
@@ -566,8 +578,8 @@ class ToGrillDevice extends Homey.Device {
     // Ambient channel. The AT-02 always reports it as the LAST channel of the
     // A1 frame (confirmed on-device: heating the clip sensor moved channel 6 of
     // 7, while probe channels stayed flat). The slots between the probes and the
-    // ambient are 0xFFFF filler, so index it from the end, not at `probeCount`.
-    if (hasAmbient && p.channels.length > probeCount) {
+    // ambient are 0xFFFF filler, so index it from the end.
+    if (hasAmbient && p.channels.length > nProbes) {
       const ambient = p.channels[p.channels.length - 1];
       if (ambient !== null && this.hasCapability('measure_temperature.ambient')) {
         this.setCapabilityValue('measure_temperature.ambient', ambient).catch(this.error);
