@@ -8,5 +8,5 @@
   "units": "dBm",
   "decimals": 0,
   "insights": true,
-  "icon": "/assets/icon.svg"
+  "icon": "/assets/rssi.svg"
 }
