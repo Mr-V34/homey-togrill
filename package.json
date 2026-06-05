@@ -3,6 +3,8 @@
   "version": "1.4.1",
   "description": "ToGrill BBQ Thermometer for Homey Pro",
   "main": "app.js",
+  "author": "Peter Persson (Mr-V34) <info@v34.com>",
+  "license": "MIT",
   "engines": { "node": ">=18.0.0" },
   "scripts": {},
   "dependencies": {}
