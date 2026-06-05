@@ -1,4 +1,12 @@
 {
+  "1.4.1": {
+    "en": "Battery is now shown as a compact reading right next to the signal strength, each with its own icon, instead of as a separate battery element. Cleaner, glanceable status row.",
+    "sv": "Batteriet visas nu som en kompakt avläsning direkt bredvid signalstyrkan, var och en med sin egen ikon, i stället för som ett separat batteri-element. Renare statusrad i ögonblicket."
+  },
+  "1.4.0": {
+    "en": "Cleaner device view: only probes that are actually plugged in are shown now, so the controls (target, min/max, timer, grill type, taste) for a probe appear when you connect it and disappear when you remove it — no more scrolling past unused probes to reach 'Target – Probe 1'. The grill (ambient) block only shows on devices that have that sensor. Signal strength now has its own antenna icon next to the battery and refreshes every minute.",
+    "sv": "Renare enhetsvy: bara sonder som faktiskt är inkopplade visas nu, så en sonds reglage (mål, min/max, timer, grilltyp, stekgrad) dyker upp när du kopplar in den och försvinner när du tar bort den — du behöver inte längre scrolla förbi oanvända sonder för att nå 'Mål – Sond 1'. Grill-/omgivningsblocket visas bara på enheter som har den sensorn. Signalstyrkan har nu en egen antennikon bredvid batteriet och uppdateras varje minut."
+  },
   "1.3.0": {
     "en": "Full 4-probe support: every probe now has its own target, min/max, timer, grill type and taste. Added a Bluetooth signal-strength reading so you can tell if the device is too far away. Disconnected probes now clear their temperature, and Flow probe pickers only list probes that are actually connected.",
     "sv": "Fullt stöd för 4 sonder: varje sond har nu egen mål, min/max, timer, grilltyp och stekgrad. Lade till Bluetooth-signalstyrka så du ser om enheten är för långt borta. Urkopplade sonder nollställer sin temperatur, och Flow-sondväljare visar bara sonder som faktiskt är anslutna."

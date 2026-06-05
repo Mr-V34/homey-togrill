@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Battery (monochrome so Homey can tint it) -->
+  <rect x="14" y="30" width="64" height="40" rx="7" fill="none" stroke="#000" stroke-width="7"/>
+  <rect x="82" y="42" width="9" height="16" rx="3" fill="#000"/>
+  <rect x="24" y="40" width="34" height="20" rx="3" fill="#000"/>
+</svg>
