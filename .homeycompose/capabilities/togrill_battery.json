@@ -1,0 +1,14 @@
+{
+  "type": "number",
+  "title": { "en": "Battery", "sv": "Batteri" },
+  "desc": { "en": "Battery level of the device", "sv": "Enhetens batterinivå" },
+  "getable": true,
+  "setable": false,
+  "uiComponent": "sensor",
+  "units": "%",
+  "decimals": 0,
+  "min": 0,
+  "max": 100,
+  "insights": true,
+  "icon": "/assets/battery.svg"
+}

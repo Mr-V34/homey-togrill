@@ -1,7 +1,7 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.togrill",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "compatibility": ">=6.0.0",
   "sdk": 3,
   "platforms": [
@@ -624,8 +624,8 @@
         "measure_temperature.probe3",
         "measure_temperature.probe4",
         "measure_temperature.ambient",
-        "measure_battery",
         "togrill_rssi",
+        "togrill_battery",
         "alarm_generic.probe1",
         "alarm_generic.probe2",
         "alarm_generic.probe3",
@@ -895,12 +895,6 @@
         "large": "/drivers/at02/assets/images/large.png",
         "xlarge": "/drivers/at02/assets/images/xlarge.png"
       },
-      "energy": {
-        "batteries": [
-          "AAA",
-          "AAA"
-        ]
-      },
       "connectivity": [
         "ble"
       ],
@@ -961,6 +955,26 @@
     }
   ],
   "capabilities": {
+    "togrill_battery": {
+      "type": "number",
+      "title": {
+        "en": "Battery",
+        "sv": "Batteri"
+      },
+      "desc": {
+        "en": "Battery level of the device",
+        "sv": "Enhetens batterinivå"
+      },
+      "getable": true,
+      "setable": false,
+      "uiComponent": "sensor",
+      "units": "%",
+      "decimals": 0,
+      "min": 0,
+      "max": 100,
+      "insights": true,
+      "icon": "/assets/battery.svg"
+    },
     "togrill_grill_type": {
       "type": "enum",
       "title": {
