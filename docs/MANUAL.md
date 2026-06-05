@@ -49,6 +49,9 @@ ones people mix up most, so here is the exact difference:
 > **Want a simple "alarm when done"?** Set only **Target**. Leave **Max** and **Min** at **0**
 > (= disabled) so they don't add extra alarms. A threshold of 0 means "no limit".
 
+The probe sliders range from **0 to 120 °C** — no food is cooked hotter than that. (The grill
+sensor has a wider range, see below.)
+
 Other per-probe controls:
 
 | Control | What it does |
@@ -68,6 +71,7 @@ If your device has the grill clip sensor, you also get:
 | **Grill Max** | Warn when the grill runs **too hot**. 0 = off. |
 | **High Grill Temp / Low Grill Temp** | The alarms driven by Grill Max / Grill Min. |
 
+The grill sliders range from **0 to 280 °C** (the grill runs far hotter than the food).
 Ideal for long low-and-slow sessions: set a Min so you get warned before the fire goes out.
 
 ### Other alarms
@@ -138,6 +142,9 @@ som oftast blandas ihop, så här är den exakta skillnaden:
 > **Vill du bara ha "larma när klart"?** Sätt bara **Mål**. Lämna **Max** och **Min** på **0**
 > (= avstängt) så de inte lägger till extra larm. Tröskelvärdet 0 betyder "ingen gräns".
 
+Sondreglagen går från **0 till 120 °C** — ingen mat tillagas varmare än så. (Grillsensorn har
+ett bredare intervall, se nedan.)
+
 Övriga reglage per sond:
 
 | Reglage | Vad det gör |
@@ -157,6 +164,7 @@ Har din enhet grillens clip-sensor får du även:
 | **Grill max** | Varna när grillen blir **för varm**. 0 = av. |
 | **Hög grilltemperatur / Låg grilltemperatur** | Larmen som styrs av Grill max / Grill min. |
 
+Grillreglagen går från **0 till 280 °C** (grillen blir mycket varmare än maten).
 Perfekt för långa lågtempspass: sätt en Min så du varnas innan elden slocknar.
 
 ### Övriga larm
