@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Device icon: round dial thermometer silhouette (monochrome, Homey tints it) -->
+  <circle cx="50" cy="50" r="38" fill="none" stroke="#000" stroke-width="7"/>
+  <circle cx="50" cy="50" r="24" fill="none" stroke="#000" stroke-width="4"/>
+  <!-- Flame mark in the centre -->
+  <path d="M50 38
+           C 47 45 39 48 43 58
+           C 45 64 50 68 50 70
+           C 50 68 55 64 57 58
+           C 61 48 53 45 50 38 Z"
+        fill="#000"/>
+</svg>
