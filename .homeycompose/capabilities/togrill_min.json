@@ -6,7 +6,7 @@
   "setable": true,
   "uiComponent": "slider",
   "min": 0,
-  "max": 300,
+  "max": 120,
   "step": 1,
   "units": "°C",
   "insights": false
