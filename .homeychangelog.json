@@ -46,5 +46,8 @@
   "1.0.0": {
     "en": "Initial release. Direct Bluetooth LE connection to the ToGrill AT-02. Real-time temperature readings for up to 4 probes and the grill ambient sensor. Battery monitoring, probe alarms, and Flow cards for automations.",
     "sv": "Första version. Direkt Bluetooth LE-anslutning till ToGrill AT-02. Realtidstemperatur för upp till 4 sonder och grillens omgivningssensor. Batteriövervakning, sondsalarm och Flow-kort för automatiseringar."
+  },
+  "1.5.0": {
+    "en": "Initial release."
   }
 }
