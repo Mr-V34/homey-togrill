@@ -30,6 +30,7 @@ class ToGrillDevice extends Homey.Device {
     this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
     this._lastAmbient     = null;  // last grill (ambient) temp, for threshold re-evaluation
     this._prevActive      = new Set();  // probe indices that reported a temp on the previous frame
+    this._probeTargetReached = new Set();  // probe indices currently at/over their target (for edge-triggered flow + alarm)
     this._lastChannels    = [];         // last raw A1 channel temps (null = unplugged)
     this._visSig          = null;       // signature of the currently-shown probe/ambient set
     this._rssiTimer       = null;       // dedicated 1-minute signal-strength refresh
@@ -547,6 +548,12 @@ class ToGrillDevice extends Homey.Device {
       const wasActive = this._prevActive.has(i);
       const isActive  = active.has(i);
       if (wasActive && !isActive) {
+        // A probe that just went away can't be "over target" any more — clear its
+        // cook alarm and target-reached state so it doesn't latch on forever.
+        this._probeTargetReached.delete(i);
+        if (this.hasCapability(`alarm_generic.probe${i + 1}`)) {
+          this.setCapabilityValue(`alarm_generic.probe${i + 1}`, false).catch(this.error);
+        }
         if (!this._disconnectedSet.has(i)) {
           this._disconnectedSet.add(i);
           this._raiseProbeDisconnected();
@@ -573,6 +580,7 @@ class ToGrillDevice extends Homey.Device {
     for (const i of active) {
       const cap = `measure_temperature.${probeNames[i]}`;
       if (this.hasCapability(cap)) this.setCapabilityValue(cap, p.channels[i]).catch(this.error);
+      this._evaluateProbeAlarms(i, p.channels[i]);
     }
 
     // Ambient channel. The AT-02 always reports it as the LAST channel of the
@@ -609,6 +617,41 @@ class ToGrillDevice extends Homey.Device {
       const prev = this.getCapabilityValue('alarm_generic.ambient_low');
       this.setCapabilityValue('alarm_generic.ambient_low', low).catch(this.error);
       if (low && !prev) this._trgGrillLow.trigger(this, { temperature: ambient }, {}).catch(this.error);
+    }
+  }
+
+  // Compare an active probe's live temperature against its user-set Target and Max
+  // and drive the per-probe alarm (alarm_generic.probeN). This mirrors the grill
+  // (ambient) alarm evaluation: the device fires its own A5/A8 alarm events too,
+  // but being request/response it doesn't reliably push them, so we evaluate here
+  // on every temperature frame instead of trusting an unsolicited event to arrive.
+  // The alarm reflects the live state (clears when the temp drops back below the
+  // thresholds); the "reached target" Flow fires only on the false→true edge.
+  _evaluateProbeAlarms(i, tempC) {
+    if (tempC === null || tempC === undefined) return;
+    const n   = i + 1;
+    const cap = `alarm_generic.probe${n}`;
+    if (!this.hasCapability(cap)) return;
+
+    // Target/Max of 0 (or unset) means "no threshold", so they don't alarm.
+    const target = this.getCapabilityValue(`togrill_target.probe${n}`) ?? 0;
+    const max    = this.getCapabilityValue(`togrill_max.probe${n}`)    ?? 0;
+
+    const reachedTarget = target > 0 && tempC >= target;
+    const overMax       = max    > 0 && tempC >  max;
+    const alarm         = reachedTarget || overMax;
+
+    const prev = this.getCapabilityValue(cap);
+    if (alarm !== prev) this.setCapabilityValue(cap, alarm).catch(this.error);
+
+    // Edge-triggered "reached target" Flow so it fires once per crossing, not on
+    // every ~1 Hz frame while the probe sits at or above the target.
+    const prevReached = this._probeTargetReached.has(i);
+    if (reachedTarget && !prevReached) {
+      this._probeTargetReached.add(i);
+      this._trgReachedTarget.trigger(this, { probe: n }, {}).catch(this.error);
+    } else if (!reachedTarget) {
+      this._probeTargetReached.delete(i);
     }
   }
 
