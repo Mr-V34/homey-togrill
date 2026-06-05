@@ -80,8 +80,8 @@
     "togrill_taste.probe2":      { "title": { "en": "Taste – Probe 2",      "sv": "Stekgrad – Sond 2" } },
     "togrill_taste.probe3":      { "title": { "en": "Taste – Probe 3",      "sv": "Stekgrad – Sond 3" } },
     "togrill_taste.probe4":      { "title": { "en": "Taste – Probe 4",      "sv": "Stekgrad – Sond 4" } },
-    "togrill_min.ambient":   { "title": { "en": "Grill Min", "sv": "Grill min" } },
-    "togrill_max.ambient":   { "title": { "en": "Grill Max", "sv": "Grill max" } }
+    "togrill_min.ambient":   { "title": { "en": "Grill Min", "sv": "Grill min" }, "min": 0, "max": 280, "step": 1, "units": "°C" },
+    "togrill_max.ambient":   { "title": { "en": "Grill Max", "sv": "Grill max" }, "min": 0, "max": 280, "step": 1, "units": "°C" }
   },
   "images": {
     "small":  "/drivers/at02/assets/images/small.png",
