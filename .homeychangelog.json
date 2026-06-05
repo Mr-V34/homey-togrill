@@ -1,4 +1,8 @@
 {
+  "1.4.2": {
+    "en": "Fixed probes on higher ports not showing: a probe moved to port 3 or 4 now appears and shows live temperature correctly. The app reads all four probe slots directly instead of relying on the device's reported probe count.",
+    "sv": "Fixade att sonder på högre portar inte visades: en sond som flyttas till port 3 eller 4 dyker nu upp och visar livetemperatur korrekt. Appen läser alla fyra sondplatser direkt i stället för att förlita sig på enhetens rapporterade antal sonder."
+  },
   "1.4.1": {
     "en": "Battery is now shown as a compact reading right next to the signal strength, each with its own icon, instead of as a separate battery element. Cleaner, glanceable status row.",
     "sv": "Batteriet visas nu som en kompakt avläsning direkt bredvid signalstyrkan, var och en med sin egen ikon, i stället för som ett separat batteri-element. Renare statusrad i ögonblicket."
