@@ -29,6 +29,10 @@ class ToGrillDevice extends Homey.Device {
     this._lastRawHex      = null;
     this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
     this._lastAmbient     = null;  // last grill (ambient) temp, for threshold re-evaluation
+    this._prevActive      = new Set();  // probe indices that reported a temp on the previous frame
+    this._lastChannels    = [];         // last raw A1 channel temps (null = unplugged)
+    this._visSig          = null;       // signature of the currently-shown probe/ambient set
+    this._rssiTimer       = null;       // dedicated 1-minute signal-strength refresh
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
@@ -40,32 +44,23 @@ class ToGrillDevice extends Homey.Device {
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
 
-    // All four probes share the same control set (target/timer/min/max/grill/taste).
-    for (let i = 0; i < 4; i++) {
-      const n = i + 1;
-      this.registerCapabilityListener(`togrill_target.probe${n}`,     v => this._setTarget(i, v));
-      this.registerCapabilityListener(`togrill_timer.probe${n}`,      v => this._setTimer(i, v));
-      this.registerCapabilityListener(`togrill_min.probe${n}`,        v => this._setMin(i, v));
-      this.registerCapabilityListener(`togrill_max.probe${n}`,        v => this._setMax(i, v));
-      this.registerCapabilityListener(`togrill_grill_type.probe${n}`, v => this._setGrillType(i, v));
-      this.registerCapabilityListener(`togrill_taste.probe${n}`,      v => this._setTaste(i, v));
+    // Register capability listeners for every control capability that currently
+    // exists. Capabilities hidden for unplugged probes get their listener back
+    // when _setCapVisible() re-adds them, so we only register what's present now.
+    for (let n = 1; n <= 4; n++) {
+      for (const { cap } of this._probeCaps(n)) this._registerListenerFor(cap);
     }
-
-    // Grill (ambient) min/max are monitored app-side — they don't write to the
-    // device (no protocol support). Re-evaluate the alarm shortly after a change
-    // (next tick, so the new capability value is committed) for instant feedback.
-    const reEvalGrill = () => this.homey.setTimeout(() => {
-      if (this._lastAmbient != null) this._evaluateAmbientAlarms(this._lastAmbient);
-    }, 100);
-    this.registerCapabilityListener('togrill_min.ambient', async () => { reEvalGrill(); });
-    this.registerCapabilityListener('togrill_max.ambient', async () => { reEvalGrill(); });
+    for (const { cap } of this._ambientCaps()) this._registerListenerFor(cap);
 
     // Initialise the grill thresholds to 0 (= disabled) when unset.
     for (const cap of ['togrill_min.ambient', 'togrill_max.ambient']) {
-      if (this.getCapabilityValue(cap) == null) await this.setCapabilityValue(cap, 0).catch(() => {});
+      if (this.hasCapability(cap) && this.getCapabilityValue(cap) == null) {
+        await this.setCapabilityValue(cap, 0).catch(() => {});
+      }
     }
 
     this._startWatchdog();
+    this._startRssiPoll();
     await this._connect();
   }
 
@@ -78,6 +73,7 @@ class ToGrillDevice extends Homey.Device {
   async onDeleted() {
     this._stopWatchdog();
     this._stopPoll();
+    this._stopRssiPoll();
     if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
@@ -88,6 +84,7 @@ class ToGrillDevice extends Homey.Device {
   async onUninit() {
     this._stopWatchdog();
     this._stopPoll();
+    this._stopRssiPoll();
     if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
@@ -95,25 +92,17 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  // Add new sub-capabilities (with their per-probe titles) to existing devices.
+  // Ensure the always-present base capabilities exist on already-paired devices.
+  // The per-probe and ambient capabilities are NOT added here — their visibility
+  // is driven dynamically by _syncProbeVisibility() so unplugged probes and a
+  // missing grill sensor stay hidden instead of cluttering the device view.
   async _ensureCapabilities() {
-    const P = (en, sv) => ({ en, sv });
-    const need = {};
-    for (let n = 1; n <= 4; n++) {
-      need[`alarm_generic.probe${n}`]      = P(`Probe ${n} Alarm`,      `Sond ${n}-larm`);
-      need[`togrill_target.probe${n}`]     = P(`Target – Probe ${n}`,   `Mål – Sond ${n}`);
-      need[`togrill_min.probe${n}`]        = P(`Min – Probe ${n}`,      `Min – Sond ${n}`);
-      need[`togrill_max.probe${n}`]        = P(`Max – Probe ${n}`,      `Max – Sond ${n}`);
-      need[`togrill_timer.probe${n}`]      = P(`Timer – Probe ${n}`,    `Timer – Sond ${n}`);
-      need[`togrill_grill_type.probe${n}`] = P(`Grill Type – Probe ${n}`, `Grilltyp – Sond ${n}`);
-      need[`togrill_taste.probe${n}`]      = P(`Taste – Probe ${n}`,    `Stekgrad – Sond ${n}`);
-    }
-    need['togrill_min.ambient']       = P('Grill Min', 'Grill min');
-    need['togrill_max.ambient']       = P('Grill Max', 'Grill max');
-    need['alarm_generic.ambient_low'] = P('Low Grill Temp', 'Låg grilltemperatur');
-    need['togrill_rssi']              = null;  // capability defines its own title
-
-    for (const [cap, title] of Object.entries(need)) {
+    const base = {
+      'measure_battery':                  null,  // standard cap, defines its own icon
+      'togrill_rssi':                     null,  // capability defines its own title
+      'alarm_generic.probe_disconnected': { en: 'Probe Disconnected', sv: 'Sond urkopplad' },
+    };
+    for (const [cap, title] of Object.entries(base)) {
       if (!this.hasCapability(cap)) {
         try {
           await this.addCapability(cap);
@@ -123,6 +112,99 @@ class ToGrillDevice extends Homey.Device {
           this.error(`addCapability ${cap} failed: ${e.message}`);
         }
       }
+    }
+  }
+
+  // The capabilities belonging to one probe, in display order (grouped per probe
+  // so the whole probe appears/disappears as one block). Titles are applied when
+  // the capability is (re-)added at runtime.
+  _probeCaps(n) {
+    return [
+      { cap: `measure_temperature.probe${n}`, title: { en: `Probe ${n}`,           sv: `Sond ${n}` } },
+      { cap: `togrill_target.probe${n}`,      title: { en: `Target – Probe ${n}`,  sv: `Mål – Sond ${n}` } },
+      { cap: `togrill_min.probe${n}`,         title: { en: `Min – Probe ${n}`,     sv: `Min – Sond ${n}` } },
+      { cap: `togrill_max.probe${n}`,         title: { en: `Max – Probe ${n}`,     sv: `Max – Sond ${n}` } },
+      { cap: `togrill_timer.probe${n}`,       title: { en: `Timer – Probe ${n}`,   sv: `Timer – Sond ${n}` } },
+      { cap: `togrill_grill_type.probe${n}`,  title: { en: `Grill Type – Probe ${n}`, sv: `Grilltyp – Sond ${n}` } },
+      { cap: `togrill_taste.probe${n}`,       title: { en: `Taste – Probe ${n}`,   sv: `Stekgrad – Sond ${n}` } },
+      { cap: `alarm_generic.probe${n}`,       title: { en: `Probe ${n} Alarm`,     sv: `Sond ${n}-larm` } },
+    ];
+  }
+
+  // The grill (ambient) capability block — shown only when the device reports an
+  // ambient sensor.
+  _ambientCaps() {
+    return [
+      { cap: 'measure_temperature.ambient', title: { en: 'Grill Temp',     sv: 'Grilltemperatur' } },
+      { cap: 'togrill_min.ambient',         title: { en: 'Grill Min',      sv: 'Grill min' } },
+      { cap: 'togrill_max.ambient',         title: { en: 'Grill Max',      sv: 'Grill max' } },
+      { cap: 'alarm_generic.ambient_high',  title: { en: 'High Grill Temp', sv: 'Hög grilltemperatur' } },
+      { cap: 'alarm_generic.ambient_low',   title: { en: 'Low Grill Temp',  sv: 'Låg grilltemperatur' } },
+    ];
+  }
+
+  // Re-evaluate the grill (ambient) alarms after a Grill Min/Max change. Deferred
+  // one tick so the new capability value is committed first. Monitored app-side
+  // (the device has no protocol support for ambient thresholds).
+  _reEvalGrill() {
+    this.homey.setTimeout(() => {
+      if (this._lastAmbient != null) this._evaluateAmbientAlarms(this._lastAmbient);
+    }, 100);
+  }
+
+  // Wire the right capability listener for a (re-)added settable capability.
+  // Called at init for existing caps and by _setCapVisible() when one is re-added,
+  // because removeCapability() also drops its listener.
+  _registerListenerFor(cap) {
+    const probe = cap.match(/^(togrill_(?:target|timer|min|max|grill_type|taste))\.probe(\d)$/);
+    if (probe) {
+      const i = Number(probe[2]) - 1;
+      const handlers = {
+        togrill_target:     v => this._setTarget(i, v),
+        togrill_timer:      v => this._setTimer(i, v),
+        togrill_min:        v => this._setMin(i, v),
+        togrill_max:        v => this._setMax(i, v),
+        togrill_grill_type: v => this._setGrillType(i, v),
+        togrill_taste:      v => this._setTaste(i, v),
+      };
+      if (this.hasCapability(cap)) this.registerCapabilityListener(cap, handlers[probe[1]]);
+      return;
+    }
+    if ((cap === 'togrill_min.ambient' || cap === 'togrill_max.ambient') && this.hasCapability(cap)) {
+      this.registerCapabilityListener(cap, async () => { this._reEvalGrill(); });
+    }
+  }
+
+  // Add a capability (with its title) if it should be shown, or remove it if it
+  // should be hidden. Homey appends runtime-added capabilities at the end of the
+  // tile order, so we group per probe to keep that ordering intuitive.
+  async _setCapVisible(cap, want, title) {
+    const has = this.hasCapability(cap);
+    if (want && !has) {
+      try {
+        await this.addCapability(cap);
+        if (title) await this.setCapabilityOptions(cap, { title });
+        this._registerListenerFor(cap);
+      } catch (e) { this.error(`addCapability ${cap} failed: ${e.message}`); }
+    } else if (!want && has) {
+      try {
+        await this.removeCapability(cap);
+      } catch (e) { this.error(`removeCapability ${cap} failed: ${e.message}`); }
+    }
+  }
+
+  // Show only the probes that are currently plugged in (reporting a temperature),
+  // and the grill (ambient) block only when the device has that sensor. Called
+  // whenever the set of active probes or the ambient flag changes.
+  async _syncProbeVisibility(active, hasAmbient) {
+    for (let n = 1; n <= 4; n++) {
+      const want = active.has(n - 1);
+      for (const { cap, title } of this._probeCaps(n)) {
+        await this._setCapVisible(cap, want, title);
+      }
+    }
+    for (const { cap, title } of this._ambientCaps()) {
+      await this._setCapVisible(cap, hasAmbient, title);
     }
   }
 
@@ -243,6 +325,7 @@ class ToGrillDevice extends Homey.Device {
     await this._requestTemperatures();
 
     this._startPoll();
+    this._updateRssi();  // refresh signal strength immediately on (re)connect
   }
 
   _startWatchdog() {
@@ -262,6 +345,22 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
+  // Refresh the signal-strength reading on its own fixed 1-minute cadence,
+  // independent of the data poll — so RSSI keeps updating even if a temperature
+  // request fails. Runs for the lifetime of the device; _updateRssi() no-ops
+  // while disconnected.
+  _startRssiPoll() {
+    this._stopRssiPoll();
+    this._rssiTimer = this.homey.setInterval(() => this._updateRssi(), 60_000);
+  }
+
+  _stopRssiPoll() {
+    if (this._rssiTimer) {
+      this.homey.clearInterval(this._rssiTimer);
+      this._rssiTimer = null;
+    }
+  }
+
   _startPoll() {
     this._stopPoll();
     let tick = 0;
@@ -270,9 +369,9 @@ class ToGrillDevice extends Homey.Device {
       try {
         // Ask for fresh temperatures every tick; refresh status (battery,
         // probe count) less often — once per ~6 ticks (~1 min at 10s).
+        // Signal strength has its own 1-minute timer (_startRssiPoll).
         await this._requestTemperatures();
         if (tick % 6 === 0) await this._requestStatus();
-        this._updateRssi();
         tick++;
       } catch (e) {
         this.log(`POLL request failed: ${e.message}`);
@@ -362,7 +461,13 @@ class ToGrillDevice extends Homey.Device {
   // ── Packet handlers ───────────────────────────────────────────────────────
 
   _onStatus(p) {
+    const probeCountChanged = !this._deviceStatus
+      || this._deviceStatus.probeCount !== p.probeCount
+      || this._deviceStatus.hasAmbient !== p.hasAmbient;
     this._deviceStatus = p;
+    // Probe count / ambient flag affect which capabilities should be shown —
+    // force the next temperature frame to re-evaluate visibility.
+    if (probeCountChanged) this._visSig = null;
     this.setCapabilityValue('measure_battery', p.battery).catch(this.error);
     this.setSettings({
       firmware_version: p.version,
@@ -377,35 +482,53 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  _onTemperatures(p) {
+  async _onTemperatures(p) {
     const probeNames = ['probe1', 'probe2', 'probe3', 'probe4'];
     const probeCount = this._deviceStatus ? this._deviceStatus.probeCount : 4;
-    const hasAmbient = this._deviceStatus ? this._deviceStatus.hasAmbient  : false;
+    // Default to "has ambient" until the device tells us otherwise, so we never
+    // hide the grill sensor while the status frame is still pending.
+    const hasAmbient = this._deviceStatus ? this._deviceStatus.hasAmbient : true;
 
-    // Probe channels
+    // Which probes are plugged in right now, read straight from the raw frame so
+    // it works even when a probe's capabilities are currently hidden.
+    const active = new Set();
     for (let i = 0; i < probeCount && i < p.channels.length; i++) {
-      const temp = p.channels[i];
-      const name = probeNames[i];
+      if (p.channels[i] !== null) active.add(i);
+    }
+    this._lastChannels = p.channels;
 
-      if (temp !== null) {
-        this.setCapabilityValue(`measure_temperature.${name}`, temp).catch(this.error);
-        if (this._disconnectedSet.has(i)) {
-          this._disconnectedSet.delete(i);
-          if (this._disconnectedSet.size === 0) {
-            this._clearProbeDisconnected();
-          }
-        }
-      } else {
+    // Edge-triggered probe-disconnected alarm: only a probe that WAS reporting
+    // and now isn't counts as a real mid-cook disconnection. Probes that were
+    // never plugged in simply stay hidden (see _syncProbeVisibility) and never
+    // raise the alarm.
+    for (let i = 0; i < probeCount; i++) {
+      const wasActive = this._prevActive.has(i);
+      const isActive  = active.has(i);
+      if (wasActive && !isActive) {
         if (!this._disconnectedSet.has(i)) {
           this._disconnectedSet.add(i);
-          // Clear the stale reading so the tile shows "--" for the unplugged probe.
-          this.setCapabilityValue(`measure_temperature.${name}`, null).catch(this.error);
           this._raiseProbeDisconnected();
-          this._trgDisconnected
-            .trigger(this, { probe: i + 1 }, {})
-            .catch(this.error);
+          this._trgDisconnected.trigger(this, { probe: i + 1 }, {}).catch(this.error);
         }
+      } else if (isActive && this._disconnectedSet.has(i)) {
+        this._disconnectedSet.delete(i);
+        if (this._disconnectedSet.size === 0) this._clearProbeDisconnected();
       }
+    }
+    this._prevActive = active;
+
+    // Show/hide probe and ambient capabilities only when the visible set changes,
+    // to avoid churning the tile order on every poll.
+    const sig = [...active].sort().join(',') + `|amb:${hasAmbient}`;
+    if (sig !== this._visSig) {
+      this._visSig = sig;
+      await this._syncProbeVisibility(active, hasAmbient);
+    }
+
+    // Push the live temperatures for the probes that are shown.
+    for (const i of active) {
+      const cap = `measure_temperature.${probeNames[i]}`;
+      if (this.hasCapability(cap)) this.setCapabilityValue(cap, p.channels[i]).catch(this.error);
     }
 
     // Ambient channel. The AT-02 always reports it as the LAST channel of the
@@ -414,7 +537,7 @@ class ToGrillDevice extends Homey.Device {
     // ambient are 0xFFFF filler, so index it from the end, not at `probeCount`.
     if (hasAmbient && p.channels.length > probeCount) {
       const ambient = p.channels[p.channels.length - 1];
-      if (ambient !== null) {
+      if (ambient !== null && this.hasCapability('measure_temperature.ambient')) {
         this.setCapabilityValue('measure_temperature.ambient', ambient).catch(this.error);
         this._evaluateAmbientAlarms(ambient);
       }
