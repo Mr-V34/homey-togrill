@@ -45,7 +45,7 @@ class ToGrillDevice extends Homey.Device {
     // Migration: add capabilities introduced in updates to already-paired
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
-    await this._migrateBatteryDisplay();
+    await this._migrateSystemCaps_v160();
     await this._migrateScales_v151();
 
     // Register capability listeners for every control capability that currently
@@ -102,8 +102,8 @@ class ToGrillDevice extends Homey.Device {
   // missing grill sensor stay hidden instead of cluttering the device view.
   async _ensureCapabilities() {
     const base = {
-      'togrill_rssi':                     null,  // capability defines its own title
-      'togrill_battery':                  null,  // capability defines its own title
+      'measure_signal_strength':                     null,  // system capability — uses its own title
+      'measure_battery':                  null,  // system capability — uses its own title
       'alarm_generic.probe_disconnected': { en: 'Probe Disconnected', sv: 'Sond urkopplad' },
     };
     for (const [cap, title] of Object.entries(base)) {
@@ -119,32 +119,36 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  // v1.4.0: the standard measure_battery is rendered by Homey as a separate
-  // battery element (driven by energy.batteries) and never sits in the sensor
-  // grid next to the signal strength. Replace it with a plain togrill_battery
-  // sensor and place signal + battery side by side. Runtime-added capabilities
-  // append at the end of the tile order, so we remove and re-add both to make
-  // them adjacent — once, guarded by a store flag.
-  async _migrateBatteryDisplay() {
-    if (this.hasCapability('measure_battery')) {
-      const v = this.getCapabilityValue('measure_battery');
-      if (v != null) this._lastBattery = v;
-      await this.removeCapability('measure_battery')
-        .catch(e => this.error(`removeCapability measure_battery failed: ${e.message}`));
-    }
-    if (this.getStoreValue('battSig_v140')) return;
+  // v1.6.0: move battery + signal strength to Homey's system capabilities
+  // (measure_battery, measure_signal_strength) so they render with the standard indicators
+  // and feed Insights consistently. Earlier versions used custom togrill_battery
+  // and togrill_rssi (a v1.4.0 cosmetic choice to place them side by side in the
+  // sensor grid). For already-paired devices we copy the last value across and
+  // drop the custom capability — once, guarded by a store flag.
+  async _migrateSystemCaps_v160() {
+    if (this.getStoreValue('systemcaps_v160')) return;
     try {
-      if (this.hasCapability('togrill_rssi'))    await this.removeCapability('togrill_rssi');
-      if (this.hasCapability('togrill_battery')) await this.removeCapability('togrill_battery');
-      await this.addCapability('togrill_rssi');
-      await this.addCapability('togrill_battery');
-      if (this._lastBattery != null) {
-        await this.setCapabilityValue('togrill_battery', this._lastBattery).catch(() => {});
+      if (this.hasCapability('togrill_rssi')) {
+        const v = this.getCapabilityValue('togrill_rssi');
+        if (!this.hasCapability('measure_signal_strength')) await this.addCapability('measure_signal_strength');
+        if (v != null) await this.setCapabilityValue('measure_signal_strength', v).catch(() => {});
+        await this.removeCapability('togrill_rssi')
+          .catch(e => this.error(`removeCapability togrill_rssi failed: ${e.message}`));
       }
-      await this.setStoreValue('battSig_v140', true);
-      this.log('Placed signal strength + battery side by side');
+      if (this.hasCapability('togrill_battery')) {
+        const v = this.getCapabilityValue('togrill_battery');
+        if (v != null) this._lastBattery = v;
+        if (!this.hasCapability('measure_battery')) await this.addCapability('measure_battery');
+        if (this._lastBattery != null) {
+          await this.setCapabilityValue('measure_battery', this._lastBattery).catch(() => {});
+        }
+        await this.removeCapability('togrill_battery')
+          .catch(e => this.error(`removeCapability togrill_battery failed: ${e.message}`));
+      }
+      await this.setStoreValue('systemcaps_v160', true);
+      this.log('Migrated battery + signal strength to system capabilities (measure_battery, measure_signal_strength)');
     } catch (e) {
-      this.error(`Battery/signal reorder failed: ${e.message}`);
+      this.error(`System-capability migration failed: ${e.message}`);
     }
   }
 
@@ -307,8 +311,8 @@ class ToGrillDevice extends Homey.Device {
       }
 
       this._peripheral = await ad.connect();
-      if (typeof ad.rssi === 'number' && this.hasCapability('togrill_rssi')) {
-        this.setCapabilityValue('togrill_rssi', ad.rssi).catch(() => {});
+      if (typeof ad.rssi === 'number' && this.hasCapability('measure_signal_strength')) {
+        this.setCapabilityValue('measure_signal_strength', ad.rssi).catch(() => {});
       }
 
       this._peripheral.once('disconnect', () => {
@@ -455,8 +459,8 @@ class ToGrillDevice extends Homey.Device {
     try {
       if (typeof this._peripheral.updateRssi === 'function') await this._peripheral.updateRssi();
       const rssi = this._peripheral.rssi;
-      if (typeof rssi === 'number' && this.hasCapability('togrill_rssi')) {
-        this.setCapabilityValue('togrill_rssi', rssi).catch(this.error);
+      if (typeof rssi === 'number' && this.hasCapability('measure_signal_strength')) {
+        this.setCapabilityValue('measure_signal_strength', rssi).catch(this.error);
       }
     } catch (e) {
       // updateRssi can fail transiently mid-connection; ignore and retry next poll.
@@ -539,7 +543,7 @@ class ToGrillDevice extends Homey.Device {
     // force the next temperature frame to re-evaluate visibility.
     if (probeCountChanged) this._visSig = null;
     this._lastBattery = p.battery;
-    this.setCapabilityValue('togrill_battery', p.battery).catch(this.error);
+    this.setCapabilityValue('measure_battery', p.battery).catch(this.error);
     this.setSettings({
       firmware_version: p.version,
       probe_count:      String(p.probeCount),

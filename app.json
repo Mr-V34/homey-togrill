@@ -1,8 +1,8 @@
 {
   "_comment": "This file is generated. Please edit .homeycompose/app.json instead.",
   "id": "com.togrill",
-  "version": "1.5.1",
-  "compatibility": ">=6.0.0",
+  "version": "1.6.0",
+  "compatibility": ">=12.2.0",
   "sdk": 3,
   "platforms": [
     "local"
@@ -12,8 +12,8 @@
     "sv": "ToGrill BBQ-termometer"
   },
   "description": {
-    "en": "Control your ToGrill AT-02 BBQ thermometer directly from Homey via Bluetooth.",
-    "sv": "Styr din ToGrill AT-02 BBQ-termometer direkt från Homey via Bluetooth."
+    "en": "Perfectly cooked barbecue, every single time.",
+    "sv": "Perfekt grillat – varje gång."
   },
   "tags": {
     "en": [
@@ -209,8 +209,8 @@
           "sv": "Sondtemperatur !{{är|är inte}} över"
         },
         "titleFormatted": {
-          "en": "Probe [[probe]] temperature !{{is|is not}} above [[temperature]] °C",
-          "sv": "Sond [[probe]] temperatur !{{är|är inte}} över [[temperature]] °C"
+          "en": "[[probe]] temperature !{{is|is not}} above [[temperature]] °C",
+          "sv": "[[probe]] temperatur !{{är|är inte}} över [[temperature]] °C"
         },
         "hint": {
           "en": "True when the selected probe is hotter than the given value.",
@@ -234,8 +234,8 @@
             "name": "temperature",
             "type": "number",
             "title": {
-              "en": "Temperature (°C)",
-              "sv": "Temperatur (°C)"
+              "en": "Temperature",
+              "sv": "Temperatur"
             },
             "min": 0,
             "max": 300,
@@ -252,8 +252,8 @@
           "sv": "Ange måltemperatur"
         },
         "titleFormatted": {
-          "en": "Set target temperature for probe [[probe]] to [[temperature]] °C",
-          "sv": "Ange måltemperatur för sond [[probe]] till [[temperature]] °C"
+          "en": "Set target temperature for [[probe]] to [[temperature]] °C",
+          "sv": "Ange måltemperatur för [[probe]] till [[temperature]] °C"
         },
         "hint": {
           "en": "Alarm fires when the probe reaches this temperature.",
@@ -277,8 +277,8 @@
             "name": "temperature",
             "type": "number",
             "title": {
-              "en": "Temperature (°C)",
-              "sv": "Temperatur (°C)"
+              "en": "Temperature",
+              "sv": "Temperatur"
             },
             "min": 0,
             "max": 300,
@@ -293,8 +293,8 @@
           "sv": "Ange sond-timer"
         },
         "titleFormatted": {
-          "en": "Set timer for probe [[probe]] to [[seconds]] seconds",
-          "sv": "Ange timer för sond [[probe]] till [[seconds]] sekunder"
+          "en": "Set timer for [[probe]] to [[seconds]] seconds",
+          "sv": "Ange timer för [[probe]] till [[seconds]] sekunder"
         },
         "args": [
           {
@@ -314,8 +314,8 @@
             "name": "seconds",
             "type": "number",
             "title": {
-              "en": "Seconds",
-              "sv": "Sekunder"
+              "en": "Time",
+              "sv": "Tid"
             },
             "min": 0,
             "max": 7200,
@@ -330,8 +330,8 @@
           "sv": "Ange sondtemperaturintervall"
         },
         "titleFormatted": {
-          "en": "Set probe [[probe]] range to [[min_temp]]–[[max_temp]] °C",
-          "sv": "Ange sond [[probe]] intervall till [[min_temp]]–[[max_temp]] °C"
+          "en": "Set range for [[probe]] to [[min_temp]]–[[max_temp]] °C",
+          "sv": "Ange intervall för [[probe]] till [[min_temp]]–[[max_temp]] °C"
         },
         "hint": {
           "en": "Alarm fires if temperature goes below min or above max.",
@@ -355,8 +355,8 @@
             "name": "min_temp",
             "type": "number",
             "title": {
-              "en": "Min temp (°C)",
-              "sv": "Min temp (°C)"
+              "en": "Min",
+              "sv": "Min"
             },
             "min": 0,
             "max": 300,
@@ -366,8 +366,8 @@
             "name": "max_temp",
             "type": "number",
             "title": {
-              "en": "Max temp (°C)",
-              "sv": "Max temp (°C)"
+              "en": "Max",
+              "sv": "Max"
             },
             "min": 0,
             "max": 300,
@@ -382,8 +382,8 @@
           "sv": "Ange grilltyp"
         },
         "titleFormatted": {
-          "en": "Set grill type for probe [[probe]] to [[grill_type]]",
-          "sv": "Ange grilltyp för sond [[probe]] till [[grill_type]]"
+          "en": "Set grill type for [[probe]] to [[grill_type]]",
+          "sv": "Ange grilltyp för [[probe]] till [[grill_type]]"
         },
         "hint": {
           "en": "Selects the meat preset for the probe (works with Taste).",
@@ -407,8 +407,8 @@
             "name": "grill_type",
             "type": "dropdown",
             "title": {
-              "en": "Grill type",
-              "sv": "Grilltyp"
+              "en": "Type",
+              "sv": "Typ"
             },
             "values": [
               {
@@ -534,8 +534,8 @@
           "sv": "Ange stekgrad"
         },
         "titleFormatted": {
-          "en": "Set taste for probe [[probe]] to [[taste]]",
-          "sv": "Ange stekgrad för sond [[probe]] till [[taste]]"
+          "en": "Set taste for [[probe]] to [[taste]]",
+          "sv": "Ange stekgrad för [[probe]] till [[taste]]"
         },
         "hint": {
           "en": "Selects the desired doneness for the probe (works with Grill type).",
@@ -559,7 +559,7 @@
             "name": "taste",
             "type": "dropdown",
             "title": {
-              "en": "Taste",
+              "en": "Doneness",
               "sv": "Stekgrad"
             },
             "values": [
@@ -624,8 +624,8 @@
         "measure_temperature.probe3",
         "measure_temperature.probe4",
         "measure_temperature.ambient",
-        "togrill_rssi",
-        "togrill_battery",
+        "measure_signal_strength",
+        "measure_battery",
         "alarm_generic.probe1",
         "alarm_generic.probe2",
         "alarm_generic.probe3",
@@ -906,6 +906,11 @@
       "connectivity": [
         "ble"
       ],
+      "energy": {
+        "batteries": [
+          "INTERNAL"
+        ]
+      },
       "platforms": [
         "local"
       ],
@@ -963,26 +968,6 @@
     }
   ],
   "capabilities": {
-    "togrill_battery": {
-      "type": "number",
-      "title": {
-        "en": "Battery",
-        "sv": "Batteri"
-      },
-      "desc": {
-        "en": "Battery level of the device",
-        "sv": "Enhetens batterinivå"
-      },
-      "getable": true,
-      "setable": false,
-      "uiComponent": "sensor",
-      "units": "%",
-      "decimals": 0,
-      "min": 0,
-      "max": 100,
-      "insights": true,
-      "icon": "/assets/battery.svg"
-    },
     "togrill_grill_type": {
       "type": "enum",
       "title": {
@@ -1149,24 +1134,6 @@
       "step": 1,
       "units": "°C",
       "insights": false
-    },
-    "togrill_rssi": {
-      "type": "number",
-      "title": {
-        "en": "Signal Strength",
-        "sv": "Signalstyrka"
-      },
-      "desc": {
-        "en": "Bluetooth signal strength to the device (higher/closer to 0 is stronger)",
-        "sv": "Bluetooth-signalstyrka till enheten (närmare 0 är starkare)"
-      },
-      "getable": true,
-      "setable": false,
-      "uiComponent": "sensor",
-      "units": "dBm",
-      "decimals": 0,
-      "insights": true,
-      "icon": "/assets/rssi.svg"
     },
     "togrill_target": {
       "type": "number",

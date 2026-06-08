@@ -7,8 +7,8 @@
     "measure_temperature.probe3",
     "measure_temperature.probe4",
     "measure_temperature.ambient",
-    "togrill_rssi",
-    "togrill_battery",
+    "measure_signal_strength",
+    "measure_battery",
     "alarm_generic.probe1",
     "alarm_generic.probe2",
     "alarm_generic.probe3",
@@ -89,6 +89,7 @@
     "xlarge": "/drivers/at02/assets/images/xlarge.png"
   },
   "connectivity": ["ble"],
+  "energy": { "batteries": ["INTERNAL"] },
   "platforms": ["local"],
   "pair": [
     { "id": "list_devices" }
