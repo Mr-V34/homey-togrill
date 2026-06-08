@@ -7,7 +7,7 @@
     "measure_temperature.probe3",
     "measure_temperature.probe4",
     "measure_temperature.ambient",
-    "measure_signal_strength",
+    "togrill_rssi",
     "measure_battery",
     "alarm_generic.probe1",
     "alarm_generic.probe2",

@@ -1,7 +1,7 @@
 {
-  "1.6.0": {
-    "en": "Battery level and Bluetooth signal strength now use Homey's standard indicators, so they display consistently across the app and in Insights.",
-    "sv": "Batterinivå och Bluetooth-signalstyrka använder nu Homeys standardindikatorer, så de visas konsekvent i appen och i Insikter."
+  "1.6.1": {
+    "en": "Battery level now uses Homey's standard battery indicator and feeds Insights consistently. Polished the wording of the Flow cards.",
+    "sv": "Batterinivån använder nu Homeys standardindikator för batteri och matar Insikter konsekvent. Putsade texten i Flow-korten."
   },
   "1.5.1": {
     "en": "Per-probe alarms now trigger reliably: a probe's alarm lights up as soon as it reaches its Target or goes over its Max, evaluated live in the app instead of waiting for the device to report it. Probe temperature sliders now top out at 120 °C, while the grill (ambient) sliders go up to 280 °C.",

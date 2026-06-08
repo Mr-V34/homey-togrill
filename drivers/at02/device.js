@@ -45,7 +45,7 @@ class ToGrillDevice extends Homey.Device {
     // Migration: add capabilities introduced in updates to already-paired
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
     await this._ensureCapabilities();
-    await this._migrateSystemCaps_v160();
+    await this._migrateCaps_v161();
     await this._migrateScales_v151();
 
     // Register capability listeners for every control capability that currently
@@ -102,7 +102,7 @@ class ToGrillDevice extends Homey.Device {
   // missing grill sensor stay hidden instead of cluttering the device view.
   async _ensureCapabilities() {
     const base = {
-      'measure_signal_strength':                     null,  // system capability — uses its own title
+      'togrill_rssi':                     null,  // capability defines its own title
       'measure_battery':                  null,  // system capability — uses its own title
       'alarm_generic.probe_disconnected': { en: 'Probe Disconnected', sv: 'Sond urkopplad' },
     };
@@ -119,22 +119,20 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  // v1.6.0: move battery + signal strength to Homey's system capabilities
-  // (measure_battery, measure_signal_strength) so they render with the standard indicators
-  // and feed Insights consistently. Earlier versions used custom togrill_battery
-  // and togrill_rssi (a v1.4.0 cosmetic choice to place them side by side in the
-  // sensor grid). For already-paired devices we copy the last value across and
-  // drop the custom capability — once, guarded by a store flag.
-  async _migrateSystemCaps_v160() {
-    if (this.getStoreValue('systemcaps_v160')) return;
+  // Converge battery + signal strength to their final capabilities:
+  //   battery → system measure_battery (standard battery indicator + Insights)
+  //   signal  → custom togrill_rssi (a plain dBm sensor)
+  // This handles two source states: v1.5.x devices (togrill_battery + togrill_rssi)
+  // and the short-lived v1.6.0 (measure_battery + measure_signal_strength). We
+  // REVERTED signal strength away from the system measure_signal_strength because
+  // it requires Homey firmware 12.2.0 and the mobile client crashed rendering it
+  // ("Cannot read property 'setable' of undefined" — unknown capability falls back
+  // to a generated slider). Copy the last value across, drop the old capability —
+  // once, guarded by a store flag.
+  async _migrateCaps_v161() {
+    if (this.getStoreValue('caps_v161')) return;
     try {
-      if (this.hasCapability('togrill_rssi')) {
-        const v = this.getCapabilityValue('togrill_rssi');
-        if (!this.hasCapability('measure_signal_strength')) await this.addCapability('measure_signal_strength');
-        if (v != null) await this.setCapabilityValue('measure_signal_strength', v).catch(() => {});
-        await this.removeCapability('togrill_rssi')
-          .catch(e => this.error(`removeCapability togrill_rssi failed: ${e.message}`));
-      }
+      // Battery → system measure_battery
       if (this.hasCapability('togrill_battery')) {
         const v = this.getCapabilityValue('togrill_battery');
         if (v != null) this._lastBattery = v;
@@ -145,10 +143,20 @@ class ToGrillDevice extends Homey.Device {
         await this.removeCapability('togrill_battery')
           .catch(e => this.error(`removeCapability togrill_battery failed: ${e.message}`));
       }
-      await this.setStoreValue('systemcaps_v160', true);
-      this.log('Migrated battery + signal strength to system capabilities (measure_battery, measure_signal_strength)');
+      // Signal → custom togrill_rssi (revert the system measure_signal_strength attempt)
+      if (this.hasCapability('measure_signal_strength')) {
+        const v = this.getCapabilityValue('measure_signal_strength');
+        if (!this.hasCapability('togrill_rssi')) await this.addCapability('togrill_rssi');
+        if (v != null) await this.setCapabilityValue('togrill_rssi', v).catch(() => {});
+        await this.removeCapability('measure_signal_strength')
+          .catch(e => this.error(`removeCapability measure_signal_strength failed: ${e.message}`));
+      } else if (!this.hasCapability('togrill_rssi')) {
+        await this.addCapability('togrill_rssi').catch(e => this.error(`addCapability togrill_rssi failed: ${e.message}`));
+      }
+      await this.setStoreValue('caps_v161', true);
+      this.log('Converged capabilities: measure_battery (system) + togrill_rssi (custom)');
     } catch (e) {
-      this.error(`System-capability migration failed: ${e.message}`);
+      this.error(`Capability migration failed: ${e.message}`);
     }
   }
 
@@ -311,8 +319,8 @@ class ToGrillDevice extends Homey.Device {
       }
 
       this._peripheral = await ad.connect();
-      if (typeof ad.rssi === 'number' && this.hasCapability('measure_signal_strength')) {
-        this.setCapabilityValue('measure_signal_strength', ad.rssi).catch(() => {});
+      if (typeof ad.rssi === 'number' && this.hasCapability('togrill_rssi')) {
+        this.setCapabilityValue('togrill_rssi', ad.rssi).catch(() => {});
       }
 
       this._peripheral.once('disconnect', () => {
@@ -459,8 +467,8 @@ class ToGrillDevice extends Homey.Device {
     try {
       if (typeof this._peripheral.updateRssi === 'function') await this._peripheral.updateRssi();
       const rssi = this._peripheral.rssi;
-      if (typeof rssi === 'number' && this.hasCapability('measure_signal_strength')) {
-        this.setCapabilityValue('measure_signal_strength', rssi).catch(this.error);
+      if (typeof rssi === 'number' && this.hasCapability('togrill_rssi')) {
+        this.setCapabilityValue('togrill_rssi', rssi).catch(this.error);
       }
     } catch (e) {
       // updateRssi can fail transiently mid-connection; ignore and retry next poll.
