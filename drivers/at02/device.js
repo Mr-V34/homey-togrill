@@ -835,7 +835,7 @@ class ToGrillDevice extends Homey.Device {
       // Surface a clean message to the UI; _connectErr may contain the full list
       // of nearby BLE devices from a failed scan, which must stay in logs only.
       this.log(`Write aborted — not connected (${this._connectErr || 'unknown'})`);
-      throw new Error('Thermometer not connected');
+      throw new Error(this.homey.__('errors.not_connected') || 'Device not connected');
     }
     this.log(`→ ${buf.toString('hex')}`);
     // Write via the characteristic object, NOT peripheral.write(uuid, uuid, buf):
