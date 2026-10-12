@@ -49,9 +49,9 @@
   },
   "source": "https://github.com/Mr-V34/homey-togrill",
   "images": {
-    "small": "/assets/images/small.png",
-    "large": "/assets/images/large.png",
-    "xlarge": "/assets/images/xlarge.png"
+    "small": "/assets/images/small.jpg",
+    "large": "/assets/images/large.jpg",
+    "xlarge": "/assets/images/xlarge.jpg"
   },
   "flow": {
     "triggers": [
@@ -953,7 +953,7 @@
       "images": {
         "small": "/drivers/at02/assets/images/small.png",
         "large": "/drivers/at02/assets/images/large.png",
-        "xlarge": "/drivers/at02/assets/images/xlarge.png"
+        "xlarge": "/drivers/at02/assets/images/xlarge.jpg"
       },
       "connectivity": [
         "ble"

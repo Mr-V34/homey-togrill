@@ -85,7 +85,7 @@
   "images": {
     "small":  "/drivers/at02/assets/images/small.png",
     "large":  "/drivers/at02/assets/images/large.png",
-    "xlarge": "/drivers/at02/assets/images/xlarge.png"
+    "xlarge": "/drivers/at02/assets/images/xlarge.jpg"
   },
   "connectivity": ["ble"],
   "energy": { "batteries": ["INTERNAL"] },
