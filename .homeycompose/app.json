@@ -1,6 +1,6 @@
 {
   "id": "com.togrill",
-  "version": "1.5.1",
+  "version": "1.6.2",
   "compatibility": ">=6.0.0",
   "sdk": 3,
   "platforms": [
@@ -11,8 +11,8 @@
     "sv": "ToGrill BBQ-termometer"
   },
   "description": {
-    "en": "Control your ToGrill AT-02 BBQ thermometer directly from Homey via Bluetooth.",
-    "sv": "Styr din ToGrill AT-02 BBQ-termometer direkt från Homey via Bluetooth."
+    "en": "Perfectly cooked barbecue, every single time.",
+    "sv": "Perfekt grillat – varje gång."
   },
   "tags": {
     "en": [
@@ -48,8 +48,8 @@
   },
   "source": "https://github.com/Mr-V34/homey-togrill",
   "images": {
-    "small": "/assets/images/small.png",
-    "large": "/assets/images/large.png",
-    "xlarge": "/assets/images/xlarge.png"
+    "small": "/assets/images/small.jpg",
+    "large": "/assets/images/large.jpg",
+    "xlarge": "/assets/images/xlarge.jpg"
   }
 }

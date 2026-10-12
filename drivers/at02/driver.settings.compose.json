@@ -26,5 +26,12 @@
     "min": 1,
     "max": 60,
     "step": 1
+  },
+  {
+    "id": "auto_silence",
+    "type": "checkbox",
+    "label": { "en": "Auto-silence buzzer", "sv": "Auto-tysta summer" },
+    "hint": { "en": "Automatically silence the thermometer's buzzer whenever an alarm sounds. The device may beep briefly before it is silenced, and this only works while Homey is connected to it. Homey Flows and notifications are not affected.", "sv": "Tysta automatiskt termometerns summer så snart ett larm ljuder. Enheten kan pipa till kort innan den tystas, och det fungerar bara medan Homey är ansluten till den. Homey-flöden och notiser påverkas inte." },
+    "value": false
   }
 ]
