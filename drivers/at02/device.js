@@ -33,7 +33,6 @@ class ToGrillDevice extends Homey.Device {
     this._probeTargetReached = new Set();  // probe indices currently at/over their target (for edge-triggered flow + alarm)
     this._lastChannels    = [];         // last raw A1 channel temps (null = unplugged)
     this._visSig          = null;       // signature of the currently-shown probe/ambient set
-    this._rssiTimer       = null;       // dedicated 1-minute signal-strength refresh
     this._lastBattery     = null;       // last known battery %, preserved across the battery-cap migration
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
@@ -41,6 +40,7 @@ class ToGrillDevice extends Homey.Device {
     this._trgAmbientCrit   = this.homey.flow.getDeviceTriggerCard('ambient_critical');
     this._trgGrillLow      = this.homey.flow.getDeviceTriggerCard('grill_temp_low');
     this._trgBatteryLow    = this.homey.flow.getDeviceTriggerCard('battery_low');
+    this._trgTimerElapsed  = this.homey.flow.getDeviceTriggerCard('probe_timer_elapsed');
 
     // Migration: add capabilities introduced in updates to already-paired
     // devices (new caps only auto-apply to freshly-paired devices otherwise).
@@ -64,7 +64,6 @@ class ToGrillDevice extends Homey.Device {
     }
 
     this._startWatchdog();
-    this._startRssiPoll();
     await this._connect();
   }
 
@@ -77,7 +76,6 @@ class ToGrillDevice extends Homey.Device {
   async onDeleted() {
     this._stopWatchdog();
     this._stopPoll();
-    this._stopRssiPoll();
     if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
@@ -88,7 +86,6 @@ class ToGrillDevice extends Homey.Device {
   async onUninit() {
     this._stopWatchdog();
     this._stopPoll();
-    this._stopRssiPoll();
     if (this._probeDisconnectTimer) this.homey.clearTimeout(this._probeDisconnectTimer);
     if (this._peripheral) {
       await this._peripheral.disconnect().catch(() => {});
@@ -102,7 +99,6 @@ class ToGrillDevice extends Homey.Device {
   // missing grill sensor stay hidden instead of cluttering the device view.
   async _ensureCapabilities() {
     const base = {
-      'togrill_rssi':                     null,  // capability defines its own title
       'measure_battery':                  null,  // system capability — uses its own title
       'alarm_generic.probe_disconnected': { en: 'Probe Disconnected', sv: 'Sond urkopplad' },
     };
@@ -119,42 +115,89 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  // Converge battery + signal strength to their final capabilities:
-  //   battery → system measure_battery (standard battery indicator + Insights)
-  //   signal  → custom togrill_rssi (a plain dBm sensor)
-  // This handles two source states: v1.5.x devices (togrill_battery + togrill_rssi)
-  // and the short-lived v1.6.0 (measure_battery + measure_signal_strength). We
-  // REVERTED signal strength away from the system measure_signal_strength because
-  // it requires Homey firmware 12.2.0 and the mobile client crashed rendering it
-  // ("Cannot read property 'setable' of undefined" — unknown capability falls back
-  // to a generated slider). Copy the last value across, drop the old capability —
-  // once, guarded by a store flag.
+  // The complete set of capabilities this driver defines, base + per-probe +
+  // ambient. Built from the same sources that drive visibility so it can never
+  // drift from what the manifest declares. Anything on a paired device that is
+  // NOT in this set is an orphan from an older version.
+  _knownCapabilities() {
+    const set = new Set([
+      'measure_battery',                  // system battery indicator
+      'alarm_generic.probe_disconnected', // always-present base alarm
+    ]);
+    for (let n = 1; n <= 4; n++) for (const { cap } of this._probeCaps(n)) set.add(cap);
+    for (const { cap } of this._ambientCaps()) set.add(cap);
+    return set;
+  }
+
+  // Converge battery + target temperature to their final system capabilities and
+  // retire signal strength entirely, then sweep away any capability this driver no
+  // longer defines:
+  //   battery → system measure_battery           (standard indicator + Insights)
+  //   target  → system target_temperature.probeN
+  //   signal  → REMOVED (both togrill_rssi and the short-lived measure_signal_strength
+  //             are swept away; peripheral.updateRssi() isn't supported on this
+  //             firmware, so a reading would just freeze and look broken)
+  // Using the system capabilities is a certification requirement (use the built-in
+  // capability when one fits). Source states handled: v1.5.x (togrill_battery +
+  // togrill_rssi + togrill_target) and the v1.6.2 beta (measure_signal_strength).
+  //
+  // IMPORTANT: the custom capability DEFINITIONS (.homeycompose/capabilities/
+  // togrill_rssi.json + togrill_target.json) MUST stay in the app even though no
+  // driver references them any more. A paired device still lists them in its
+  // stored capability set; if the app no longer defines a capability the device
+  // has, Homey can't validate the device's capability array and EVERY
+  // add/remove/setCapabilityValue throws "Invalid Capability" — which jams this
+  // migration and even blocks measure_temperature from being added. Only delete
+  // those two definition files in a LATER release, once every device has migrated.
+  //
+  // This MUST run every boot and be idempotent — it is NOT guarded by a one-shot
+  // store flag. The previous flag-guarded version is exactly why the orphan
+  // survived: once the flag was set (e.g. by v1.6.0, or after a removeCapability
+  // silently failed), the cleanup early-returned forever and the crash recurred.
   async _migrateCaps_v161() {
-    if (this.getStoreValue('caps_v161')) return;
     try {
-      // Battery → system measure_battery
+      // Preserve values across the two known renames before the sweep removes
+      // the legacy capabilities. measure_battery is always present (added by
+      // _ensureCapabilities), so we only copy the value into it.
       if (this.hasCapability('togrill_battery')) {
         const v = this.getCapabilityValue('togrill_battery');
         if (v != null) this._lastBattery = v;
-        if (!this.hasCapability('measure_battery')) await this.addCapability('measure_battery');
-        if (this._lastBattery != null) {
-          await this.setCapabilityValue('measure_battery', this._lastBattery).catch(() => {});
+      }
+      if (this._lastBattery != null && this.hasCapability('measure_battery')) {
+        await this.setCapabilityValue('measure_battery', this._lastBattery).catch(() => {});
+      }
+      // Signal strength is retired — no value to preserve. Any leftover
+      // togrill_rssi / measure_signal_strength is dropped by the sweep below.
+
+      // Target temperature: custom togrill_target.probeN → system target_temperature.probeN.
+      // Only migrate the probe slots that currently exist (visibility adds/removes
+      // the rest at runtime); copy the value before the sweep drops the old cap.
+      for (let n = 1; n <= 4; n++) {
+        const oldCap = `togrill_target.probe${n}`;
+        const newCap = `target_temperature.probe${n}`;
+        if (!this.hasCapability(oldCap)) continue;
+        const v = this.getCapabilityValue(oldCap);
+        if (!this.hasCapability(newCap)) {
+          await this.addCapability(newCap)
+            .catch(e => this.error(`addCapability ${newCap} failed: ${e.message}`));
+          const opts = { title: { en: `Target – Probe ${n}`, sv: `Mål – Sond ${n}` }, ...(this._numOpts(newCap) || {}) };
+          await this.setCapabilityOptions(newCap, opts).catch(() => {});
+          this._registerListenerFor(newCap);
         }
-        await this.removeCapability('togrill_battery')
-          .catch(e => this.error(`removeCapability togrill_battery failed: ${e.message}`));
+        if (v != null) await this.setCapabilityValue(newCap, v).catch(() => {});
       }
-      // Signal → custom togrill_rssi (revert the system measure_signal_strength attempt)
-      if (this.hasCapability('measure_signal_strength')) {
-        const v = this.getCapabilityValue('measure_signal_strength');
-        if (!this.hasCapability('togrill_rssi')) await this.addCapability('togrill_rssi');
-        if (v != null) await this.setCapabilityValue('togrill_rssi', v).catch(() => {});
-        await this.removeCapability('measure_signal_strength')
-          .catch(e => this.error(`removeCapability measure_signal_strength failed: ${e.message}`));
-      } else if (!this.hasCapability('togrill_rssi')) {
-        await this.addCapability('togrill_rssi').catch(e => this.error(`addCapability togrill_rssi failed: ${e.message}`));
+
+      // Self-healing sweep: drop every capability the driver no longer defines.
+      // Hidden probe caps are simply absent from getCapabilities(), so this never
+      // fights _syncProbeVisibility(); known caps are kept regardless.
+      const known = this._knownCapabilities();
+      for (const cap of this.getCapabilities()) {
+        if (!known.has(cap)) {
+          await this.removeCapability(cap)
+            .then(() => this.log(`Removed orphan capability ${cap}`))
+            .catch(e => this.error(`removeCapability ${cap} failed: ${e.message}`));
+        }
       }
-      await this.setStoreValue('caps_v161', true);
-      this.log('Converged capabilities: measure_battery (system) + togrill_rssi (custom)');
     } catch (e) {
       this.error(`Capability migration failed: ${e.message}`);
     }
@@ -166,7 +209,7 @@ class ToGrillDevice extends Homey.Device {
   _probeCaps(n) {
     return [
       { cap: `measure_temperature.probe${n}`, title: { en: `Probe ${n}`,           sv: `Sond ${n}` } },
-      { cap: `togrill_target.probe${n}`,      title: { en: `Target – Probe ${n}`,  sv: `Mål – Sond ${n}` } },
+      { cap: `target_temperature.probe${n}`,  title: { en: `Target – Probe ${n}`,  sv: `Mål – Sond ${n}` } },
       { cap: `togrill_min.probe${n}`,         title: { en: `Min – Probe ${n}`,     sv: `Min – Sond ${n}` } },
       { cap: `togrill_max.probe${n}`,         title: { en: `Max – Probe ${n}`,     sv: `Max – Sond ${n}` } },
       { cap: `togrill_timer.probe${n}`,       title: { en: `Timer – Probe ${n}`,   sv: `Timer – Sond ${n}` } },
@@ -194,7 +237,12 @@ class ToGrillDevice extends Homey.Device {
   // for already-paired devices, since Homey doesn't push manifest option changes
   // to capability instances that already exist.
   _numOpts(cap) {
-    if (/^togrill_(?:target|min|max)\.probe\d$/.test(cap)) {
+    if (/^target_temperature\.probe\d$/.test(cap)) {
+      // System target_temperature defaults to 4–35 °C / thermostat UI; override to
+      // the BBQ-probe range and keep the slider UX the custom cap used.
+      return { min: 0, max: 120, step: 1, units: '°C', decimals: 0, uiComponent: 'slider' };
+    }
+    if (/^togrill_(?:min|max)\.probe\d$/.test(cap)) {
       return { min: 0, max: 120, step: 1, units: '°C' };
     }
     if (cap === 'togrill_min.ambient' || cap === 'togrill_max.ambient') {
@@ -237,11 +285,17 @@ class ToGrillDevice extends Homey.Device {
   // Called at init for existing caps and by _setCapVisible() when one is re-added,
   // because removeCapability() also drops its listener.
   _registerListenerFor(cap) {
-    const probe = cap.match(/^(togrill_(?:target|timer|min|max|grill_type|taste))\.probe(\d)$/);
+    // Target temperature now uses the system capability (own postfix per probe).
+    const tgt = cap.match(/^target_temperature\.probe(\d)$/);
+    if (tgt) {
+      const i = Number(tgt[1]) - 1;
+      if (this.hasCapability(cap)) this.registerCapabilityListener(cap, v => this._setTarget(i, v));
+      return;
+    }
+    const probe = cap.match(/^(togrill_(?:timer|min|max|grill_type|taste))\.probe(\d)$/);
     if (probe) {
       const i = Number(probe[2]) - 1;
       const handlers = {
-        togrill_target:     v => this._setTarget(i, v),
         togrill_timer:      v => this._setTimer(i, v),
         togrill_min:        v => this._setMin(i, v),
         togrill_max:        v => this._setMax(i, v),
@@ -319,9 +373,6 @@ class ToGrillDevice extends Homey.Device {
       }
 
       this._peripheral = await ad.connect();
-      if (typeof ad.rssi === 'number' && this.hasCapability('togrill_rssi')) {
-        this.setCapabilityValue('togrill_rssi', ad.rssi).catch(() => {});
-      }
 
       this._peripheral.once('disconnect', () => {
         this.log('BLE disconnected — scheduling immediate reconnect');
@@ -407,7 +458,6 @@ class ToGrillDevice extends Homey.Device {
     await this._requestTemperatures();
 
     this._startPoll();
-    this._updateRssi();  // refresh signal strength immediately on (re)connect
   }
 
   _startWatchdog() {
@@ -427,22 +477,6 @@ class ToGrillDevice extends Homey.Device {
     }
   }
 
-  // Refresh the signal-strength reading on its own fixed 1-minute cadence,
-  // independent of the data poll — so RSSI keeps updating even if a temperature
-  // request fails. Runs for the lifetime of the device; _updateRssi() no-ops
-  // while disconnected.
-  _startRssiPoll() {
-    this._stopRssiPoll();
-    this._rssiTimer = this.homey.setInterval(() => this._updateRssi(), 60_000);
-  }
-
-  _stopRssiPoll() {
-    if (this._rssiTimer) {
-      this.homey.clearInterval(this._rssiTimer);
-      this._rssiTimer = null;
-    }
-  }
-
   _startPoll() {
     this._stopPoll();
     let tick = 0;
@@ -451,7 +485,6 @@ class ToGrillDevice extends Homey.Device {
       try {
         // Ask for fresh temperatures every tick; refresh status (battery,
         // probe count) less often — once per ~6 ticks (~1 min at 10s).
-        // Signal strength has its own 1-minute timer (_startRssiPoll).
         await this._requestTemperatures();
         if (tick % 6 === 0) await this._requestStatus();
         tick++;
@@ -459,20 +492,6 @@ class ToGrillDevice extends Homey.Device {
         this.log(`POLL request failed: ${e.message}`);
       }
     }, POLL_MS);
-  }
-
-  // Refresh the Bluetooth signal-strength reading (dBm; closer to 0 = stronger).
-  async _updateRssi() {
-    if (!this._peripheral) return;
-    try {
-      if (typeof this._peripheral.updateRssi === 'function') await this._peripheral.updateRssi();
-      const rssi = this._peripheral.rssi;
-      if (typeof rssi === 'number' && this.hasCapability('togrill_rssi')) {
-        this.setCapabilityValue('togrill_rssi', rssi).catch(this.error);
-      }
-    } catch (e) {
-      // updateRssi can fail transiently mid-connection; ignore and retry next poll.
-    }
   }
 
   _stopPoll() {
@@ -684,7 +703,7 @@ class ToGrillDevice extends Homey.Device {
     if (!this.hasCapability(cap)) return;
 
     // Target/Max of 0 (or unset) means "no threshold", so they don't alarm.
-    const target = this.getCapabilityValue(`togrill_target.probe${n}`) ?? 0;
+    const target = this.getCapabilityValue(`target_temperature.probe${n}`) ?? 0;
     const max    = this.getCapabilityValue(`togrill_max.probe${n}`)    ?? 0;
 
     const reachedTarget = target > 0 && tempC >= target;
@@ -721,6 +740,12 @@ class ToGrillDevice extends Homey.Device {
       case 'below_min':
       case 'probe_alarm':
         this.setCapabilityValue(`alarm_generic.${name}`, true).catch(this.error);
+        break;
+      case 'probe_timer_alarm':
+        // The probe's countdown timer (set via togrill_timer / set_probe_timer)
+        // reached zero. Best-effort edge event — the AT-02 is request/response and
+        // may not always push it. Matches the HA integration's timer event.
+        this._trgTimerElapsed.trigger(this, { probe: p.probe + 1 }, {}).catch(this.error);
         break;
     }
   }

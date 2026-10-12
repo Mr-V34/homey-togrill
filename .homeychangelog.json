@@ -1,4 +1,8 @@
 {
+  "1.6.2": {
+    "en": "Battery and the per-probe target temperature now use Homey's standard capabilities. Added a Flow trigger that fires when a probe's timer runs out. The app now automatically cleans up leftover capabilities from earlier versions on every start, fixing a rare crash on the device page.",
+    "sv": "Batteri och måltemperatur per sond använder nu Homeys standardegenskaper. Lade till en Flow-utlösare som aktiveras när en sonds timer löper ut. Appen rensar nu automatiskt bort kvarvarande egenskaper från tidigare versioner vid varje start, vilket åtgärdar en sällsynt krasch på enhetssidan."
+  },
   "1.6.1": {
     "en": "Battery level now uses Homey's standard battery indicator and feeds Insights consistently. Polished the wording of the Flow cards.",
     "sv": "Batterinivån använder nu Homeys standardindikator för batteri och matar Insikter konsekvent. Putsade texten i Flow-korten."

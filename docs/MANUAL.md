@@ -90,7 +90,7 @@ Ideal for long low-and-slow sessions: set a Min so you get warned before the fir
 ### Flow cards
 
 - **Triggers:** Probe reached target temperature · Probe disconnected · Grill too hot ·
-  Grill too cold · Battery low.
+  Grill too cold · Battery low · Probe timer elapsed.
 - **Conditions:** Probe temperature is above a value.
 - **Actions:** Set target temperature · Set probe timer · Set probe min/max range ·
   Set grill type · Set taste.
@@ -183,7 +183,7 @@ Perfekt för långa lågtempspass: sätt en Min så du varnas innan elden slockn
 ### Flow-kort
 
 - **Utlösare:** Sond nådde måltemperatur · Sond urkopplad · Grillen för varm ·
-  Grillen för kall · Lågt batteri.
+  Grillen för kall · Lågt batteri · Sondtimer löpte ut.
 - **Villkor:** Sondtemperatur är över ett värde.
 - **Åtgärder:** Sätt måltemperatur · Sätt sondtimer · Sätt sondens min/max · Sätt grilltyp ·
   Sätt stekgrad.

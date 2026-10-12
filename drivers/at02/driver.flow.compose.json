@@ -39,6 +39,14 @@
       "tokens": [
         { "name": "battery_level", "type": "number", "title": { "en": "Battery level (%)", "sv": "Batterinivå (%)" }, "example": 15 }
       ]
+    },
+    {
+      "id": "probe_timer_elapsed",
+      "title": { "en": "Probe timer elapsed", "sv": "Sondtimer löpte ut" },
+      "hint":  { "en": "Fires when a probe's countdown timer reaches zero on the device.", "sv": "Utlöses när en sonds nedräkningstimer når noll på enheten." },
+      "tokens": [
+        { "name": "probe", "type": "number", "title": { "en": "Probe number", "sv": "Sondnummer" }, "example": 1 }
+      ]
     }
   ],
   "conditions": [
