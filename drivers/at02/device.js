@@ -26,6 +26,7 @@ class ToGrillDevice extends Homey.Device {
     this._disconnectedSet = new Set();
     this._probeDisconnectTimer = null;
     this._connectErr      = null;
+    this._connecting      = false;     // guard against overlapping _connect() attempts
     this._lastRawHex      = null;
     this._lastRawTime     = 0;  // tracks which probe indices are currently disconnected
     this._lastAmbient     = null;  // last grill (ambient) temp, for threshold re-evaluation
@@ -34,6 +35,7 @@ class ToGrillDevice extends Homey.Device {
     this._lastChannels    = [];         // last raw A1 channel temps (null = unplugged)
     this._visSig          = null;       // signature of the currently-shown probe/ambient set
     this._lastBattery     = null;       // last known battery %, preserved across the battery-cap migration
+    this._autoSilence     = this.getSetting('auto_silence') === true;  // auto-silence the device buzzer on alarms
 
     this._trgReachedTarget = this.homey.flow.getDeviceTriggerCard('probe_reached_target');
     this._trgDisconnected  = this.homey.flow.getDeviceTriggerCard('probe_disconnected');
@@ -347,6 +349,14 @@ class ToGrillDevice extends Homey.Device {
   // ── BLE connection ────────────────────────────────────────────────────────
 
   async _connect() {
+    // Re-entrancy guard: a BLE connect on this firmware can take ~15 s, longer
+    // than the 10 s reconnect watchdog — without this the watchdog (and the
+    // post-disconnect retry) fire a second _connect() mid-flight, so two parallel
+    // connections race and trip "Peripheral disconnected during service discovery".
+    if (this._connecting) {
+      this.log('Connect already in progress — skipping duplicate attempt');
+      return;
+    }
     const uuid = this.getStoreValue('peripheralUuid');
     if (!uuid) {
       this._connectErr = 'No BLE UUID stored — delete and re-pair the device';
@@ -354,6 +364,7 @@ class ToGrillDevice extends Homey.Device {
       return;
     }
 
+    this._connecting = true;
     try {
       this.log(`Connecting to ${uuid}…`);
 
@@ -368,7 +379,9 @@ class ToGrillDevice extends Homey.Device {
         this.log(`discover() found ${all.length} device(s): ${all.map(a => `${a.localName || '?'}(${a.uuid})`).join(', ')}`);
         ad = all.find(a => a.uuid === uuid);
         if (!ad) {
-          throw new Error(`Device ${uuid} not visible. Found: [${all.map(a => a.localName || a.uuid).join(', ') || 'nothing'}]`);
+          // The full scan list is already logged above; keep the thrown error
+          // short so the UI never shows a wall of other people's BLE devices.
+          throw new Error('Thermometer not found while scanning — it may be out of range, asleep, or still connected to another app or phone');
         }
       }
 
@@ -394,6 +407,8 @@ class ToGrillDevice extends Homey.Device {
       this.error(`Connect failed: ${err.message}`);
       this._connectErr = err.message;
       this._peripheral = null;
+    } finally {
+      this._connecting = false;
     }
   }
 
@@ -487,6 +502,9 @@ class ToGrillDevice extends Homey.Device {
         // probe count) less often — once per ~6 ticks (~1 min at 10s).
         await this._requestTemperatures();
         if (tick % 6 === 0) await this._requestStatus();
+        // Re-silence the buzzer each cycle while an alarm is still active, to
+        // quiet the device's periodic re-rings (every alarm_interval minutes).
+        if (this._autoSilence && this._anyAlarmActive()) await this._autoSilenceBuzzer();
         tick++;
       } catch (e) {
         this.log(`POLL request failed: ${e.message}`);
@@ -677,7 +695,10 @@ class ToGrillDevice extends Homey.Device {
     if (this.hasCapability('alarm_generic.ambient_high')) {
       const prev = this.getCapabilityValue('alarm_generic.ambient_high');
       this.setCapabilityValue('alarm_generic.ambient_high', high).catch(this.error);
-      if (high && !prev) this._trgAmbientCrit.trigger(this, { temperature: ambient }, {}).catch(this.error);
+      if (high && !prev) {
+        this._trgAmbientCrit.trigger(this, { temperature: ambient }, {}).catch(this.error);
+        this._autoSilenceBuzzer();
+      }
     }
 
     const min = this.getCapabilityValue('togrill_min.ambient') ?? 0;
@@ -685,7 +706,10 @@ class ToGrillDevice extends Homey.Device {
     if (this.hasCapability('alarm_generic.ambient_low')) {
       const prev = this.getCapabilityValue('alarm_generic.ambient_low');
       this.setCapabilityValue('alarm_generic.ambient_low', low).catch(this.error);
-      if (low && !prev) this._trgGrillLow.trigger(this, { temperature: ambient }, {}).catch(this.error);
+      if (low && !prev) {
+        this._trgGrillLow.trigger(this, { temperature: ambient }, {}).catch(this.error);
+        this._autoSilenceBuzzer();
+      }
     }
   }
 
@@ -712,6 +736,7 @@ class ToGrillDevice extends Homey.Device {
 
     const prev = this.getCapabilityValue(cap);
     if (alarm !== prev) this.setCapabilityValue(cap, alarm).catch(this.error);
+    if (alarm && !prev) this._autoSilenceBuzzer();
 
     // Edge-triggered "reached target" Flow so it fires once per crossing, not on
     // every ~1 Hz frame while the probe sits at or above the target.
@@ -722,6 +747,28 @@ class ToGrillDevice extends Homey.Device {
     } else if (!reachedTarget) {
       this._probeTargetReached.delete(i);
     }
+  }
+
+  // Auto-silence: when enabled in settings, send the global buzzer-silence
+  // command (A5 05) so the physical device stops beeping. The AT-02 has no
+  // persistent mute, so this is re-sent on every alarm edge and on each poll
+  // while an alarm is still active. No-op unless the setting is on. Homey Flows
+  // and notifications are independent of this and keep firing.
+  async _autoSilenceBuzzer() {
+    if (!this._autoSilence) return;
+    try {
+      await this._write(protocol.encodeAckAlarm());
+    } catch (e) {
+      this.log(`Auto-silence failed: ${e.message}`);
+    }
+  }
+
+  // True while any dashboard alarm (probe target/max, grill high/low, probe
+  // disconnected) is currently raised.
+  _anyAlarmActive() {
+    const caps = ['alarm_generic.ambient_high', 'alarm_generic.ambient_low', 'alarm_generic.probe_disconnected'];
+    for (let n = 1; n <= 4; n++) caps.push(`alarm_generic.probe${n}`);
+    return caps.some(c => this.hasCapability(c) && this.getCapabilityValue(c) === true);
   }
 
   _onProbeEvent(p) {
@@ -735,17 +782,20 @@ class ToGrillDevice extends Homey.Device {
         this._disconnectedSet.add(p.probe);
         this._raiseProbeDisconnected();
         this._trgDisconnected.trigger(this, { probe: p.probe + 1 }, {}).catch(this.error);
+        this._autoSilenceBuzzer();
         break;
       case 'above_max':
       case 'below_min':
       case 'probe_alarm':
         this.setCapabilityValue(`alarm_generic.${name}`, true).catch(this.error);
+        this._autoSilenceBuzzer();
         break;
       case 'probe_timer_alarm':
         // The probe's countdown timer (set via togrill_timer / set_probe_timer)
         // reached zero. Best-effort edge event — the AT-02 is request/response and
         // may not always push it. Matches the HA integration's timer event.
         this._trgTimerElapsed.trigger(this, { probe: p.probe + 1 }, {}).catch(this.error);
+        this._autoSilenceBuzzer();
         break;
     }
   }
@@ -770,6 +820,7 @@ class ToGrillDevice extends Homey.Device {
       this._trgReachedTarget
         .trigger(this, { probe: p.probe + 1 }, {})
         .catch(this.error);
+      this._autoSilenceBuzzer();
     }
   }
 
@@ -781,7 +832,10 @@ class ToGrillDevice extends Homey.Device {
       await this._connect();
     }
     if (!this._peripheral || !this._writeChar) {
-      throw new Error(this._connectErr || 'Device not connected');
+      // Surface a clean message to the UI; _connectErr may contain the full list
+      // of nearby BLE devices from a failed scan, which must stay in logs only.
+      this.log(`Write aborted — not connected (${this._connectErr || 'unknown'})`);
+      throw new Error('Thermometer not connected');
     }
     this.log(`→ ${buf.toString('hex')}`);
     // Write via the characteristic object, NOT peripheral.write(uuid, uuid, buf):
@@ -861,8 +915,15 @@ class ToGrillDevice extends Homey.Device {
     return out;
   }
 
-  // Device-settings UI: write alarm interval (minutes) to the device when changed.
+  // Device-settings UI: write alarm interval (minutes) to the device when changed,
+  // and track the auto-silence toggle (applied on the next alarm / poll).
   async onSettings({ newSettings, changedKeys }) {
+    if (changedKeys.includes('auto_silence')) {
+      this._autoSilence = newSettings.auto_silence === true;
+      this.log(`Auto-silence buzzer: ${this._autoSilence ? 'on' : 'off'}`);
+      // If turned on while an alarm is already sounding, silence it right away.
+      if (this._autoSilence && this._anyAlarmActive()) this._autoSilenceBuzzer();
+    }
     if (changedKeys.includes('alarm_interval')) {
       const interval = Number(newSettings.alarm_interval);
       try {
