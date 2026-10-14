@@ -1,4 +1,8 @@
 {
+  "1.6.3": {
+    "en": "The app now has a Swedish description in the App Store, and the app page links to the full manual.",
+    "sv": "Appen har nu en svensk beskrivning i App Store, och appsidan länkar till den fullständiga manualen."
+  },
   "1.6.2": {
     "en": "Added an \"Auto-silence buzzer\" device setting that quiets the thermometer's alarm sound automatically. Battery and the per-probe target temperature now use Homey's standard capabilities. Added a Flow trigger that fires when a probe's timer runs out. The app now automatically cleans up leftover capabilities from earlier versions on every start, fixing a rare crash on the device page.",
     "sv": "Lade till enhetsinställningen \"Auto-tysta summer\" som automatiskt tystar termometerns larmljud. Batteri och måltemperatur per sond använder nu Homeys standardegenskaper. Lade till en Flow-utlösare som aktiveras när en sonds timer löper ut. Appen rensar nu automatiskt bort kvarvarande egenskaper från tidigare versioner vid varje start, vilket åtgärdar en sällsynt krasch på enhetssidan."
