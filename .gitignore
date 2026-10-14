@@ -1,16 +1,23 @@
+# Secrets (Athom: env.json must never be committed)
+env.json
+.env
+.env.*
+*.pem
+*.key
+
 # Homey build output
 .homeybuild/
 
 # Node
 node_modules/
+npm-debug.log*
+*.log
 
-# OS
+# OS and editors
 .DS_Store
 Thumbs.db
-
-# Editor
 .vscode/
 .idea/
 
-# Claude internal
+# local tooling
 .claude/

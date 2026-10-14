@@ -43,9 +43,18 @@
     "name": "Peter Persson (Mr-V34)",
     "email": "info@v34.com"
   },
+  "contributors": {
+    "developers": [
+      {
+        "name": "B.Frank"
+      }
+    ]
+  },
   "bugs": {
     "url": "https://github.com/Mr-V34/homey-togrill/issues"
   },
+  "homepage": "https://github.com/Mr-V34/homey-togrill/blob/main/docs/MANUAL.md",
+  "support": "mailto:info@v34.com",
   "source": "https://github.com/Mr-V34/homey-togrill",
   "images": {
     "small": "/assets/images/small.jpg",
